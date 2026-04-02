@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LIRR Ticket Calculator</title>
+  <style>
+    :root {
+      --primary: #1d4ed8;
+      --primary-light: #3b82f6;
+      --primary-bg: #eff6ff;
+      --green: #16a34a;
+      --green-bg: #f0fdf4;
+      --green-border: #86efac;
+      --red: #dc2626;
+      --amber: #d97706;
+      --border: #e2e8f0;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --text-2: #475569;
+      --text-3: #94a3b8;
+      --today: #f59e0b;
+      --radius: 14px;
+      --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: .5rem;
+    }
+    header h1 { font-size: 1.1875rem; font-weight: 700; letter-spacing: -.01em; }
+    header .sub { font-size: .8125rem; opacity: .75; margin-top: 1px; }
+    .header-right { display: flex; align-items: center; gap: .875rem; }
+    .share-btn {
+      display: flex; align-items: center; gap: .375rem;
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.3);
+      color: white; border-radius: 8px;
+      padding: .375rem .75rem;
+      font-size: .8125rem; font-weight: 600;
+      cursor: pointer; white-space: nowrap;
+      transition: background .15s;
+    }
+    .share-btn:hover { background: rgba(255,255,255,.25); }
+    .share-btn.copied { background: rgba(255,255,255,.25); border-color: rgba(255,255,255,.6); }
+    .share-btn svg { flex-shrink: 0; }
+
+    /* ── Layout ── */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 1.25rem;
+      max-width: 1060px;
+      margin: 1.25rem auto;
+      padding: 0 1.25rem;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 1.25rem;
+    }
+
+    /* ── Calendar ── */
+    .cal-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .cal-nav h2 { font-size: 1.125rem; font-weight: 700; }
+    .arrow {
+      width: 34px; height: 34px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .12s, border-color .12s;
+      color: var(--text-2);
+    }
+    .arrow:hover { background: var(--bg); border-color: #cbd5e1; color: var(--text); }
+
+    .cal-actions {
+      display: flex;
+      gap: .5rem;
+      margin-bottom: 1rem;
+    }
+    .chip {
+      font-size: .8rem;
+      font-weight: 500;
+      padding: .3125rem .75rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: white;
+      cursor: pointer;
+      color: var(--text-2);
+      transition: background .12s, color .12s;
+      white-space: nowrap;
+    }
+    .chip:hover { background: var(--primary-bg); color: var(--primary); border-color: #bfdbfe; }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+    }
+
+    .day-hdr {
+      text-align: center;
+      font-size: .6875rem;
+      font-weight: 700;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      padding: .375rem 0 .5rem;
+    }
+    .day-hdr.we { color: #cbd5e1; }
+
+    .day {
+      aspect-ratio: 1;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 9px;
+      font-size: .9375rem;
+      font-weight: 500;
+      cursor: pointer;
+      user-select: none;
+      transition: background .1s, color .1s, transform .05s;
+      border: 2px solid transparent;
+      position: relative;
+    }
+    .day:hover:not(.blank):not(.on) { background: #e0e7ff; color: var(--primary); }
+    .day.blank { cursor: default; }
+    .day.we { color: #94a3b8; }
+    .day.we:hover:not(.on) { background: #f1f5f9; color: #64748b; }
+    .day.past { opacity: .38; }
+    .day.on {
+      background: var(--primary);
+      color: white;
+      font-weight: 700;
+    }
+    .day.on.we {
+      background: #818cf8;
+    }
+    /* Peak-both mode: amber */
+    .day.on.peak-both {
+      background: #d97706;
+    }
+    .day.today { border-color: var(--today); }
+    .day.on.today { border-color: #fbbf24; }
+    .day:active:not(.blank) { transform: scale(.92); }
+
+    /* Holiday dot */
+    .day.holiday:not(.on)::after {
+      content: '';
+      position: absolute;
+      bottom: 3px; left: 50%;
+      transform: translateX(-50%);
+      width: 3px; height: 3px;
+      background: #f87171;
+      border-radius: 50%;
+    }
+
+    /* Legend */
+    .cal-legend {
+      display: flex;
+      gap: 1rem;
+      margin-top: .75rem;
+      padding-top: .75rem;
+      border-top: 1px solid var(--border);
+      font-size: .75rem;
+      color: var(--text-3);
+    }
+    .legend-item { display: flex; align-items: center; gap: .375rem; }
+    .legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .legend-dot.blue   { background: var(--primary); }
+    .legend-dot.amber  { background: #d97706; }
+    .legend-dot.empty  { background: var(--border); }
+
+    /* ── Cost panel ── */
+    .panel-title {
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--text-3);
+      margin-bottom: .625rem;
+    }
+
+    .tally {
+      font-size: 1.875rem;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: .1875rem;
+    }
+    .tally span { font-size: 1rem; font-weight: 500; color: var(--text-2); margin-left: .25rem; }
+
+    .tally-sub {
+      font-size: .8125rem;
+      color: var(--text-3);
+      margin-bottom: 1.25rem;
+    }
+
+    .divider { height: 1px; background: var(--border); margin: 1rem 0; }
+
+    .options { display: flex; flex-direction: column; gap: .5rem; }
+
+    .opt {
+      border: 2px solid var(--border);
+      border-radius: 11px;
+      padding: .8125rem .9375rem;
+      position: relative;
+      transition: border-color .12s;
+    }
+    .opt.best {
+      border-color: var(--green-border);
+      background: var(--green-bg);
+    }
+    .opt.worst { opacity: .7; }
+
+    .opt-badge {
+      position: absolute;
+      top: -1px; right: 10px;
+      background: var(--green);
+      color: white;
+      font-size: .625rem;
+      font-weight: 800;
+      padding: 2px 9px;
+      border-radius: 0 0 7px 7px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .opt-row { display: flex; align-items: center; gap: .5rem; }
+    .opt-num {
+      font-size: .75rem;
+      font-weight: 700;
+      color: var(--text-3);
+      width: 18px;
+      flex-shrink: 0;
+    }
+    .opt-name {
+      flex: 1;
+      font-size: .9375rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .opt.best .opt-name { color: var(--green); }
+    .opt-price {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .opt.best .opt-price { color: var(--green); }
+
+    .opt-note {
+      font-size: .8rem;
+      color: var(--text-2);
+      margin-top: .3125rem;
+      padding-left: 1.375rem;
+      line-height: 1.45;
+    }
+    .opt-delta {
+      font-size: .8rem;
+      color: var(--red);
+      padding-left: 1.375rem;
+      margin-top: .125rem;
+      font-weight: 500;
+    }
+
+    /* ── Insight box ── */
+    .insight-box {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 9px;
+      padding: .875rem;
+      margin-top: 1rem;
+    }
+    .insight-row {
+      display: flex;
+      gap: .5rem;
+      font-size: .825rem;
+      color: #0369a1;
+      line-height: 1.5;
+      margin-bottom: .5rem;
+    }
+    .insight-row:last-child { margin-bottom: 0; }
+    .insight-icon { flex-shrink: 0; margin-top: 1px; }
+
+    .empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .625rem;
+      padding: 2.5rem 1rem;
+      color: var(--text-3);
+      text-align: center;
+    }
+    .empty .icon { font-size: 2rem; opacity: .5; }
+    .empty p { font-size: .875rem; max-width: 180px; line-height: 1.5; }
+
+    /* ── Fare editor ── */
+    .fare-wrap {
+      max-width: 1060px;
+      margin: 0 auto 2rem;
+      padding: 0 1.25rem;
+    }
+    .fare-toggle {
+      background: none; border: none;
+      font-size: .8125rem; color: var(--text-3);
+      cursor: pointer; padding: .375rem 0;
+      display: flex; align-items: center; gap: .375rem;
+      transition: color .12s;
+    }
+    .fare-toggle:hover { color: var(--text-2); }
+
+    .fare-editor {
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-top: .5rem;
+      box-shadow: var(--shadow);
+    }
+    .fare-editor.open { display: block; }
+    .fare-editor-title {
+      font-size: .75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .07em; color: var(--text-3); margin-bottom: 1rem;
+    }
+    .fare-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+      gap: .75rem;
+    }
+    .fare-field label {
+      display: block;
+      font-size: .8rem; font-weight: 600; color: var(--text-2);
+      margin-bottom: .25rem;
+    }
+    .fare-field input {
+      width: 100%;
+      padding: .4375rem .75rem;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-size: .9375rem;
+      font-family: inherit;
+      color: var(--text);
+      transition: border-color .12s, box-shadow .12s;
+    }
+    .fare-field input:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+    }
+    .fare-note {
+      font-size: .75rem; color: var(--text-3);
+      margin-top: .875rem;
+      padding-top: .875rem;
+      border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 720px) {
+      .layout { grid-template-columns: 1fr; }
+      header { gap: .25rem; }
+      .tally { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>LIRR Ticket Calculator</h1>
+    <div class="sub">Hicksville → Penn Station &nbsp;·&nbsp; Zone 7</div>
+  </div>
+  <button class="share-btn" id="copyLinkBtn">
+    <svg id="copyIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
+    </svg>
+    <span id="copyBtnText">Copy Link</span>
+  </button>
+</header>
+
+<div class="layout">
+
+  <!-- Calendar -->
+  <div class="card">
+    <div class="cal-nav">
+      <button class="arrow" id="prevBtn" title="Previous month">&#8592;</button>
+      <h2 id="monthLabel"></h2>
+      <button class="arrow" id="nextBtn" title="Next month">&#8594;</button>
+    </div>
+    <div class="cal-actions">
+      <button class="chip" id="twtBtn">&#10003; Select All Tue/Wed/Thu</button>
+      <button class="chip" id="clearBtn">&#215; Clear All</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-legend">
+      <div class="legend-item"><div class="legend-dot empty"></div>Not going in</div>
+      <div class="legend-item"><div class="legend-dot blue"></div>Peak in, off-peak out</div>
+      <div class="legend-item"><div class="legend-dot amber"></div>Peak in, peak out (right-click to set)</div>
+    </div>
+  </div>
+
+  <!-- Cost panel -->
+  <div class="card">
+    <div class="panel-title">Cost Comparison</div>
+    <div id="panelContent"></div>
+  </div>
+
+</div>
+
+<!-- Fare editor -->
+<div class="fare-wrap">
+  <button class="fare-toggle" id="fareToggleBtn">&#9881; Edit fare prices</button>
+  <div class="fare-editor" id="fareEditor">
+    <div class="fare-editor-title">Fare Prices — Effective January 4, 2026</div>
+    <div class="fare-grid">
+      <div class="fare-field">
+        <label>Monthly Pass</label>
+        <input type="number" id="f-monthly" step="0.25" min="0">
+      </div>
+      <div class="fare-field">
+        <label>Weekly Pass</label>
+        <input type="number" id="f-weekly" step="0.25" min="0">
+      </div>
+      <div class="fare-field">
+        <label>Peak One-Way</label>
+        <input type="number" id="f-peak" step="0.25" min="0">
+      </div>
+      <div class="fare-field">
+        <label>Off-Peak One-Way</label>
+        <input type="number" id="f-offpeak" step="0.25" min="0">
+      </div>
+      <div class="fare-field">
+        <label>Weekday Day Pass</label>
+        <input type="number" id="f-dp-wd" step="0.25" min="0">
+      </div>
+      <div class="fare-field">
+        <label>Weekend Day Pass</label>
+        <input type="number" id="f-dp-we" step="0.25" min="0">
+      </div>
+    </div>
+    <div class="fare-note">
+      Peak = trains arriving NYC 6–10am or departing NYC 4–8pm on weekdays. Her trips: peak inbound + off-peak return = $<span id="perDayLabel"></span>/day.
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Fares ──────────────────────────────────────────────────────────────────
+const fares = {
+  monthly:    299.75,
+  weekly:     106.50,
+  peakOw:      15.25,
+  offpeakOw:   11.25,
+  dayPassWd:   27.45,
+  dayPassWe:   22.50,
+};
+const fmt = n => '$' + n.toFixed(2);
+
+// ─── Date helpers ────────────────────────────────────────────────────────────
+const MONTHS = ['January','February','March','April','May','June',
+                'July','August','September','October','November','December'];
+const today = new Date();
+today.setHours(0,0,0,0);
+
+function dateKey(y, m, d) { return `${y}|${m}|${d}`; }
+function isWeekend(dow) { return dow === 0 || dow === 6; }
+function isTWT(dow)     { return dow === 2 || dow === 3 || dow === 4; }
+
+// ─── Federal Holidays ────────────────────────────────────────────────────────
+function buildHolidays(year) {
+  const h = new Map(); // "month|day" (0-indexed) → name
+
+  function observed(mo, day, name) {
+    const dow = new Date(year, mo, day).getDay();
+    const d = dow === 0 ? day + 1 : dow === 6 ? day - 1 : day;
+    h.set(`${mo}|${d}`, name);
+  }
+  function nthWeekday(mo, wd, n) {
+    let d = 1, cnt = 0;
+    while (true) { if (new Date(year, mo, d).getDay() === wd && ++cnt === n) return d; d++; }
+  }
+  function lastMonday(mo) {
+    const d = new Date(year, mo + 1, 0);
+    while (d.getDay() !== 1) d.setDate(d.getDate() - 1);
+    return d.getDate();
+  }
+
+  observed(0,  1,  "New Year's Day");
+  h.set(`0|${nthWeekday(0,1,3)}`,   'MLK Day');
+  h.set(`1|${nthWeekday(1,1,3)}`,   "Presidents' Day");
+  h.set(`4|${lastMonday(4)}`,        'Memorial Day');
+  observed(5,  19, 'Juneteenth');
+  observed(6,  4,  'Independence Day');
+  h.set(`8|${nthWeekday(8,1,1)}`,   'Labor Day');
+  h.set(`9|${nthWeekday(9,1,2)}`,   'Columbus Day');
+  observed(10, 11, 'Veterans Day');
+  h.set(`10|${nthWeekday(10,4,4)}`, 'Thanksgiving');
+  observed(11, 25, 'Christmas Day');
+  return h;
+}
+
+const _holCache = {};
+function getHols(year) { return _holCache[year] || (_holCache[year] = buildHolidays(year)); }
+function isHoliday(y, m, d)  { return getHols(y).has(`${m}|${d}`); }
+function holName(y, m, d)    { return getHols(y).get(`${m}|${d}`) || ''; }
+
+// ─── State ───────────────────────────────────────────────────────────────────
+// sel: Map<dateKey, mode>  1 = peak in / off-peak out  |  2 = peak in / peak out
+let vYear, vMonth;
+const sel = new Map();
+
+function initView() {
+  const d = today.getDate();
+  vYear  = today.getFullYear();
+  vMonth = d <= 15 ? today.getMonth() : today.getMonth() + 1;
+  if (vMonth > 11) { vMonth = 0; vYear++; }
+}
+
+// ─── localStorage ────────────────────────────────────────────────────────────
+function lsKey() { return `lirr-${vYear}-${vMonth}`; }
+
+function saveToStorage() {
+  const data = [];
+  sel.forEach((mode, key) => data.push([+key.split('|')[2], mode]));
+  try { localStorage.setItem(lsKey(), JSON.stringify(data)); } catch {}
+}
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(lsKey());
+    if (!raw) return false;
+    sel.clear();
+    JSON.parse(raw).forEach(([d, mode]) => sel.set(dateKey(vYear, vMonth, d), mode));
+    return true;
+  } catch { return false; }
+}
+
+// ─── URL sharing ─────────────────────────────────────────────────────────────
+function updateURL() {
+  const days = [];
+  sel.forEach((mode, key) => {
+    const d = key.split('|')[2];
+    days.push(mode === 2 ? `${d}p` : d);
+  });
+  const hash = `${vYear}${String(vMonth+1).padStart(2,'0')}${days.length ? ':'+days.join(',') : ''}`;
+  history.replaceState(null, '', '#' + hash);
+}
+
+function loadFromURL() {
+  const hash = location.hash.slice(1);
+  if (hash.length < 6) return false;
+  const ci   = hash.indexOf(':');
+  const dp   = ci === -1 ? hash : hash.slice(0, ci);
+  const rest = ci === -1 ? '' : hash.slice(ci+1);
+  const y = parseInt(dp.slice(0,4)), m = parseInt(dp.slice(4,6)) - 1;
+  if (isNaN(y) || isNaN(m) || m < 0 || m > 11) return false;
+  vYear = y; vMonth = m;
+  sel.clear();
+  if (rest) rest.split(',').forEach(p => {
+    const pb = p.endsWith('p');
+    const d  = parseInt(pb ? p.slice(0,-1) : p);
+    if (!isNaN(d) && d >= 1 && d <= 31) sel.set(dateKey(y, m, d), pb ? 2 : 1);
+  });
+  return true;
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(location.href).then(() => {
+    const btn  = document.getElementById('copyLinkBtn');
+    const icon = document.getElementById('copyIcon');
+    const txt  = document.getElementById('copyBtnText');
+    btn.classList.add('copied');
+    icon.innerHTML = '<polyline points="20 6 9 17 4 12"/>';
+    txt.textContent = 'Copied!';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      icon.innerHTML = '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>';
+      txt.textContent = 'Copy Link';
+    }, 2000);
+  });
+}
+
+// ─── Calendar ────────────────────────────────────────────────────────────────
+function renderCalendar() {
+  document.getElementById('monthLabel').textContent = `${MONTHS[vMonth]} ${vYear}`;
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach((lbl, i) => {
+    const el = document.createElement('div');
+    el.className = 'day-hdr' + (i >= 5 ? ' we' : '');
+    el.textContent = lbl;
+    grid.appendChild(el);
+  });
+
+  const firstDow = new Date(vYear, vMonth, 1).getDay();
+  const blanks   = (firstDow + 6) % 7;
+  const daysIn   = new Date(vYear, vMonth + 1, 0).getDate();
+  const isCurMon = vYear === today.getFullYear() && vMonth === today.getMonth();
+
+  for (let i = 0; i < blanks; i++) {
+    const b = document.createElement('div'); b.className = 'day blank'; grid.appendChild(b);
+  }
+
+  for (let d = 1; d <= daysIn; d++) {
+    const date    = new Date(vYear, vMonth, d);
+    const dow     = date.getDay();
+    const key     = dateKey(vYear, vMonth, d);
+    const we      = isWeekend(dow);
+    const past    = isCurMon && date < today;
+    const isToday = date.getTime() === today.getTime();
+    const hol     = isHoliday(vYear, vMonth, d);
+
+    const el = document.createElement('div');
+
+    function refreshCell() {
+      const m = sel.get(key) || 0;
+      el.className = ['day',
+        we      ? 'we'        : '',
+        past    ? 'past'      : '',
+        hol     ? 'holiday'   : '',
+        m       ? 'on'        : '',
+        m === 2 ? 'peak-both' : '',
+        isToday ? 'today'     : '',
+      ].filter(Boolean).join(' ');
+    }
+    refreshCell();
+    el.textContent = d;
+    if (hol) el.title = holName(vYear, vMonth, d);
+
+    el.addEventListener('click', () => {
+      sel.has(key) ? sel.delete(key) : sel.set(key, 1);
+      refreshCell(); persist();
+    });
+    el.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      if (!sel.has(key) || we) return;
+      sel.set(key, sel.get(key) === 2 ? 1 : 2);
+      refreshCell(); persist();
+    });
+    let pt;
+    el.addEventListener('touchstart', () => {
+      if (!sel.has(key) || we) return;
+      pt = setTimeout(() => {
+        sel.set(key, sel.get(key) === 2 ? 1 : 2);
+        refreshCell(); persist();
+      }, 500);
+    }, { passive: true });
+    el.addEventListener('touchend',  () => clearTimeout(pt), { passive: true });
+    el.addEventListener('touchmove', () => clearTimeout(pt), { passive: true });
+
+    grid.appendChild(el);
+  }
+}
+
+function persist() { saveToStorage(); updateURL(); updateCosts(); }
+
+// ─── Auto-select Tue/Wed/Thu (skipping holidays) ─────────────────────────────
+function selectTWT() {
+  sel.clear();
+  const daysIn   = new Date(vYear, vMonth + 1, 0).getDate();
+  const isCurMon = vYear === today.getFullYear() && vMonth === today.getMonth();
+  for (let d = 1; d <= daysIn; d++) {
+    const date = new Date(vYear, vMonth, d);
+    if (!isTWT(date.getDay())) continue;
+    if (isCurMon && date < today) continue;
+    if (isHoliday(vYear, vMonth, d)) continue;
+    sel.set(dateKey(vYear, vMonth, d), 1);
+  }
+  renderCalendar(); persist();
+}
+
+function clearAll() { sel.clear(); renderCalendar(); persist(); }
+
+// ─── Month navigation ────────────────────────────────────────────────────────
+function changeMonth(delta) {
+  vMonth += delta;
+  if (vMonth < 0)  { vMonth = 11; vYear--; }
+  if (vMonth > 11) { vMonth = 0;  vYear++; }
+  sel.clear();
+  if (!loadFromStorage()) selectTWT();
+  else { renderCalendar(); updateURL(); updateCosts(); }
+}
+
+// ─── Cost calculation ────────────────────────────────────────────────────────
+function dayCost(mode, we) {
+  if (we)         return fares.offpeakOw * 2;
+  if (mode === 2) return fares.peakOw * 2;
+  return fares.peakOw + fares.offpeakOw;
+}
+
+function calcCosts() {
+  let wdDays = 0, weDays = 0, peakBothDays = 0, indTotal = 0, dpTotal = 0;
+  sel.forEach((mode, k) => {
+    const [y,m,d] = k.split('|').map(Number);
+    const we = isWeekend(new Date(y,m,d).getDay());
+    we ? weDays++ : wdDays++;
+    if (mode === 2) peakBothDays++;
+    indTotal += dayCost(mode, we);
+    dpTotal  += we ? fares.dayPassWe : fares.dayPassWd;
+  });
+  const total = wdDays + weDays;
+  if (!total) return null;
+
+  const defaultTrip = fares.peakOw + fares.offpeakOw;
+
+  const weekMap = {};
+  sel.forEach((mode, k) => {
+    const [y,m,d] = k.split('|').map(Number);
+    const date = new Date(y,m,d), dow = date.getDay();
+    const mon = new Date(date);
+    mon.setDate(mon.getDate() - (dow+6)%7);
+    const wk = `${mon.getFullYear()}|${mon.getMonth()}|${mon.getDate()}`;
+    if (!weekMap[wk]) weekMap[wk] = { cost:0, count:0 };
+    weekMap[wk].cost  += dayCost(mode, isWeekend(dow));
+    weekMap[wk].count++;
+  });
+
+  let weeklyCombo = 0, passesUsed = 0;
+  Object.values(weekMap).forEach(({ cost, count }) => {
+    if (count >= 5 && fares.weekly < cost) { weeklyCombo += fares.weekly; passesUsed++; }
+    else weeklyCombo += cost;
+  });
+
+  return { total, wdDays, weDays, peakBothDays, defaultTrip,
+           monthly: fares.monthly, individual: indTotal, dayPasses: dpTotal,
+           weeklyCombo, passesUsed };
+}
+
+// ─── Render cost panel ───────────────────────────────────────────────────────
+function updateCosts() {
+  const c = calcCosts();
+  const panel = document.getElementById('panelContent');
+  if (!c) {
+    panel.innerHTML = `<div class="empty"><div class="icon">🗓</div>
+      <p>Click days on the calendar to see your ticket cost comparison</p></div>`;
+    return;
+  }
+
+  const { total, wdDays, weDays, peakBothDays, defaultTrip,
+          monthly, individual, dayPasses, weeklyCombo, passesUsed } = c;
+  const normalDays = wdDays - peakBothDays;
+
+  let indNote = peakBothDays > 0 && normalDays > 0
+    ? `${normalDays} day${normalDays!==1?'s':''} × ${fmt(fares.peakOw+fares.offpeakOw)} + ${peakBothDays} peak-out × ${fmt(fares.peakOw*2)}`
+    : peakBothDays > 0
+    ? `${peakBothDays} day${peakBothDays!==1?'s':''} × ${fmt(fares.peakOw*2)} (peak both ways)`
+    : `${fmt(fares.peakOw+fares.offpeakOw)}/day — peak in, off-peak out`;
+  indNote += ' — buy via TrainTime app to skip $6.50 on-board fee';
+
+  const weeklyLabel = passesUsed > 0
+    ? `${passesUsed} Weekly Pass${passesUsed>1?'es':''} + Individual` : 'Weekly + Individual';
+  const weeklyNote  = passesUsed > 0
+    ? `${passesUsed} weekly pass${passesUsed>1?'es':''} cover weeks with 5+ days; individual for the rest`
+    : `No single week has 5+ days — weekly pass (${fmt(fares.weekly)}) doesn't help at this usage`;
+
+  const allOpts = [
+    { id:'monthly',    name:'Monthly Pass',        cost:monthly,     note:'Unlimited rides all month' },
+    { id:'individual', name:'Individual One-Ways',  cost:individual,  note:indNote },
+    { id:'daypass',    name:'Day Passes',            cost:dayPasses,   note:`Unlimited same-day travel — ${fmt(fares.dayPassWd)}/weekday${weDays>0?`, ${fmt(fares.dayPassWe)}/weekend`:''}` },
+    { id:'weekly',     name:weeklyLabel,             cost:weeklyCombo, note:weeklyNote },
+  ];
+
+  const order = ['monthly','individual','weekly','daypass'];
+  allOpts.sort((a,b) => Math.abs(a.cost-b.cost)<0.005
+    ? order.indexOf(a.id)-order.indexOf(b.id) : a.cost-b.cost);
+
+  const best = allOpts[0].cost;
+  let sub = wdDays > 0 ? `${wdDays} weekday` : '';
+  if (peakBothDays > 0) sub += ` (${peakBothDays} peak out)`;
+  if (weDays > 0) sub += `${sub?' + ':''}${weDays} weekend`;
+
+  let html = `<div class="tally">${total}<span>day${total!==1?'s':''} selected</span></div>
+    <div class="tally-sub">${sub}</div>
+    <div class="divider"></div><div class="options">`;
+
+  allOpts.forEach((opt, i) => {
+    const isBest = i === 0, delta = opt.cost - best;
+    html += `<div class="opt${isBest?' best':''}${i===allOpts.length-1&&delta>5?' worst':''}">
+      ${isBest?'<div class="opt-badge">Best Value</div>':''}
+      <div class="opt-row">
+        <div class="opt-num">#${i+1}</div>
+        <div class="opt-name">${opt.name}</div>
+        <div class="opt-price">${fmt(opt.cost)}</div>
+      </div>
+      <div class="opt-note">${opt.note}</div>
+      ${!isBest?`<div class="opt-delta">+${fmt(delta)} vs best option</div>`:''}
+    </div>`;
+  });
+  html += '</div>';
+
+  const breakeven = Math.ceil(fares.monthly / defaultTrip);
+  const toBreak   = breakeven - wdDays;
+  html += '<div class="insight-box">';
+
+  if (wdDays === 0) {
+    html += `<div class="insight-row"><span class="insight-icon">💡</span><span>Only weekend days — off-peak fares both ways.</span></div>`;
+  } else if (individual < monthly) {
+    html += `<div class="insight-row"><span class="insight-icon">💡</span>
+      <span>Individual saves <strong>${fmt(monthly-individual)}</strong> vs monthly for this selection.</span></div>`;
+    if (toBreak > 0 && toBreak <= 6)
+      html += `<div class="insight-row"><span class="insight-icon">📅</span>
+        <span>Add <strong>${toBreak} more weekday${toBreak!==1?'s':''}</strong> and the monthly pass becomes cheapest.</span></div>`;
+  } else {
+    html += `<div class="insight-row"><span class="insight-icon">✅</span>
+      <span>Monthly pass saves <strong>${fmt(individual-monthly)}</strong> vs individual for this selection.</span></div>`;
+  }
+
+  html += `<div class="insight-row"><span class="insight-icon">📊</span>
+    <span>Monthly breakeven: <strong>${breakeven} weekday trips</strong> (${fmt(fares.monthly)} ÷ ${fmt(defaultTrip)}/day).</span></div>
+    <div class="insight-row"><span class="insight-icon">📱</span>
+    <span>Buy via <strong>TrainTime app</strong> to avoid the $6.50 on-board surcharge. PAYG: 11th trip free after 10 in 14 days — only kicks in at ~5 days/week.</span></div>
+  </div>`;
+
+  panel.innerHTML = html;
+}
+
+// ─── Fare editor ─────────────────────────────────────────────────────────────
+function initFareEditor() {
+  [['f-monthly','monthly'],['f-weekly','weekly'],['f-peak','peakOw'],
+   ['f-offpeak','offpeakOw'],['f-dp-wd','dayPassWd'],['f-dp-we','dayPassWe']
+  ].forEach(([id,key]) => {
+    const inp = document.getElementById(id);
+    inp.value = fares[key];
+    inp.addEventListener('input', e => {
+      const v = parseFloat(e.target.value);
+      if (!isNaN(v) && v >= 0) { fares[key] = v; updatePerDayLabel(); updateCosts(); }
+    });
+  });
+  document.getElementById('fareToggleBtn').addEventListener('click', () => {
+    const ed = document.getElementById('fareEditor'), btn = document.getElementById('fareToggleBtn');
+    btn.textContent = ed.classList.toggle('open') ? '✕ Close fare editor' : '⚙ Edit fare prices';
+  });
+  updatePerDayLabel();
+}
+
+function updatePerDayLabel() {
+  document.getElementById('perDayLabel').textContent = (fares.peakOw+fares.offpeakOw).toFixed(2);
+}
+
+// ─── Bootstrap ───────────────────────────────────────────────────────────────
+if (!loadFromURL()) {
+  initView();
+  if (!loadFromStorage()) selectTWT();
+  else { renderCalendar(); updateURL(); updateCosts(); }
+} else {
+  renderCalendar(); updateURL(); updateCosts();
+}
+initFareEditor();
+
+document.getElementById('prevBtn').addEventListener('click', () => changeMonth(-1));
+document.getElementById('nextBtn').addEventListener('click', () => changeMonth(1));
+document.getElementById('twtBtn').addEventListener('click', selectTWT);
+document.getElementById('clearBtn').addEventListener('click', clearAll);
+document.getElementById('copyLinkBtn').addEventListener('click', copyLink);
+</script>
+</body>
+</html>
