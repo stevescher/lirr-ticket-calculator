@@ -73,11 +73,15 @@ A public version of this tool is planned that will support any LIRR zone, route,
 
 ---
 
-## Running locally
+## Running the app
 
-No build step required. Open `index.html` directly in a browser, or use a simple static server:
+**Online (no setup):** https://lirr-ticket-calculator.vercel.app
+
+**Offline / locally:** No build step required. Open `index.html` directly in a browser, or serve it with:
 
 ```bash
 python3 -m http.server 8080
 # then open http://localhost:8080
 ```
+
+Both options are fully functional. The app has no server-side dependencies — everything runs in the browser.
