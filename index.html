@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LIRR Ticket Calculator</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1d4ed8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="LIRR Calc">
+  <link rel="apple-touch-icon" href="/icons/icon-192.svg">
   <style>
     :root {
       --primary: #1d4ed8;
@@ -559,8 +565,15 @@ function loadFromStorage() {
   try {
     const raw = localStorage.getItem(lsKey());
     if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return false;
     sel.clear();
-    JSON.parse(raw).forEach(([d, mode]) => sel.set(dateKey(vYear, vMonth, d), mode));
+    parsed.forEach(([d, mode]) => {
+      const day = +d;
+      if (!Number.isInteger(day) || day < 1 || day > 31) return;
+      if (mode !== 1 && mode !== 2) return;
+      sel.set(dateKey(vYear, vMonth, day), mode);
+    });
     return true;
   } catch { return false; }
 }
@@ -761,9 +774,18 @@ function calcCosts() {
 function updateCosts() {
   const c = calcCosts();
   const panel = document.getElementById('panelContent');
+  panel.textContent = '';
+
   if (!c) {
-    panel.innerHTML = `<div class="empty"><div class="icon">🗓</div>
-      <p>Click days on the calendar to see your ticket cost comparison</p></div>`;
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    const icon = document.createElement('div');
+    icon.className = 'icon';
+    icon.textContent = '🗓';
+    const p = document.createElement('p');
+    p.textContent = 'Click days on the calendar to see your ticket cost comparison';
+    empty.append(icon, p);
+    panel.append(empty);
     return;
   }
 
@@ -800,49 +822,109 @@ function updateCosts() {
   if (peakBothDays > 0) sub += ` (${peakBothDays} peak out)`;
   if (weDays > 0) sub += `${sub?' + ':''}${weDays} weekend`;
 
-  let html = `<div class="tally">${total}<span>day${total!==1?'s':''} selected</span></div>
-    <div class="tally-sub">${sub}</div>
-    <div class="divider"></div><div class="options">`;
+  const tally = document.createElement('div');
+  tally.className = 'tally';
+  tally.append(document.createTextNode(String(total)));
+  const tallySpan = document.createElement('span');
+  tallySpan.textContent = `day${total!==1?'s':''} selected`;
+  tally.append(tallySpan);
+
+  const tallySub = document.createElement('div');
+  tallySub.className = 'tally-sub';
+  tallySub.textContent = sub;
+
+  const divider = document.createElement('div');
+  divider.className = 'divider';
+
+  const options = document.createElement('div');
+  options.className = 'options';
 
   allOpts.forEach((opt, i) => {
-    const isBest = i === 0, delta = opt.cost - best;
-    html += `<div class="opt${isBest?' best':''}${i===allOpts.length-1&&delta>5?' worst':''}">
-      ${isBest?'<div class="opt-badge">Best Value</div>':''}
-      <div class="opt-row">
-        <div class="opt-num">#${i+1}</div>
-        <div class="opt-name">${opt.name}</div>
-        <div class="opt-price">${fmt(opt.cost)}</div>
-      </div>
-      <div class="opt-note">${opt.note}</div>
-      ${!isBest?`<div class="opt-delta">+${fmt(delta)} vs best option</div>`:''}
-    </div>`;
+    const isBest = i === 0;
+    const delta = opt.cost - best;
+    const isWorst = i === allOpts.length - 1 && delta > 5;
+
+    const optDiv = document.createElement('div');
+    optDiv.className = 'opt' + (isBest ? ' best' : '') + (isWorst ? ' worst' : '');
+
+    if (isBest) {
+      const badge = document.createElement('div');
+      badge.className = 'opt-badge';
+      badge.textContent = 'Best Value';
+      optDiv.append(badge);
+    }
+
+    const row = document.createElement('div');
+    row.className = 'opt-row';
+    const num = document.createElement('div');
+    num.className = 'opt-num';
+    num.textContent = `#${i+1}`;
+    const name = document.createElement('div');
+    name.className = 'opt-name';
+    name.textContent = opt.name;
+    const price = document.createElement('div');
+    price.className = 'opt-price';
+    price.textContent = fmt(opt.cost);
+    row.append(num, name, price);
+
+    const note = document.createElement('div');
+    note.className = 'opt-note';
+    note.textContent = opt.note;
+
+    optDiv.append(row, note);
+
+    if (!isBest) {
+      const deltaDiv = document.createElement('div');
+      deltaDiv.className = 'opt-delta';
+      deltaDiv.textContent = `+${fmt(delta)} vs best option`;
+      optDiv.append(deltaDiv);
+    }
+
+    options.append(optDiv);
   });
-  html += '</div>';
 
   const breakeven = Math.ceil(fares.monthly / defaultTrip);
   const toBreak   = breakeven - wdDays;
-  html += '<div class="insight-box">';
 
-  if (wdDays === 0) {
-    html += `<div class="insight-row"><span class="insight-icon">💡</span><span>Only weekend days — off-peak fares both ways.</span></div>`;
-  } else if (individual < monthly) {
-    html += `<div class="insight-row"><span class="insight-icon">💡</span>
-      <span>Individual saves <strong>${fmt(monthly-individual)}</strong> vs monthly for this selection.</span></div>`;
-    if (toBreak > 0 && toBreak <= 6)
-      html += `<div class="insight-row"><span class="insight-icon">📅</span>
-        <span>Add <strong>${toBreak} more weekday${toBreak!==1?'s':''}</strong> and the monthly pass becomes cheapest.</span></div>`;
-  } else {
-    html += `<div class="insight-row"><span class="insight-icon">✅</span>
-      <span>Monthly pass saves <strong>${fmt(individual-monthly)}</strong> vs individual for this selection.</span></div>`;
+  const insightBox = document.createElement('div');
+  insightBox.className = 'insight-box';
+
+  function makeInsightRow(iconText, ...parts) {
+    const row = document.createElement('div');
+    row.className = 'insight-row';
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'insight-icon';
+    iconSpan.textContent = iconText;
+    const textSpan = document.createElement('span');
+    parts.forEach(part => {
+      if (typeof part === 'string') {
+        textSpan.append(document.createTextNode(part));
+      } else {
+        const el = document.createElement(part[0]);
+        el.textContent = part[1];
+        textSpan.append(el);
+      }
+    });
+    row.append(iconSpan, textSpan);
+    return row;
   }
 
-  html += `<div class="insight-row"><span class="insight-icon">📊</span>
-    <span>Monthly breakeven: <strong>${breakeven} weekday trips</strong> (${fmt(fares.monthly)} ÷ ${fmt(defaultTrip)}/day).</span></div>
-    <div class="insight-row"><span class="insight-icon">📱</span>
-    <span>Buy via <strong>TrainTime app</strong> to avoid the $6.50 on-board surcharge. PAYG: 11th trip free after 10 in 14 days — only kicks in at ~5 days/week.</span></div>
-  </div>`;
+  if (wdDays === 0) {
+    insightBox.append(makeInsightRow('💡', 'Only weekend days — off-peak fares both ways.'));
+  } else if (individual < monthly) {
+    insightBox.append(makeInsightRow('💡', 'Individual saves ', ['strong', fmt(monthly-individual)], ' vs monthly for this selection.'));
+    if (toBreak > 0 && toBreak <= 6)
+      insightBox.append(makeInsightRow('📅', 'Add ', ['strong', `${toBreak} more weekday${toBreak!==1?'s':''}`], ' and the monthly pass becomes cheapest.'));
+  } else {
+    insightBox.append(makeInsightRow('✅', 'Monthly pass saves ', ['strong', fmt(individual-monthly)], ' vs individual for this selection.'));
+  }
 
-  panel.innerHTML = html;
+  insightBox.append(
+    makeInsightRow('📊', 'Monthly breakeven: ', ['strong', `${breakeven} weekday trips`], ` (${fmt(fares.monthly)} ÷ ${fmt(defaultTrip)}/day).`),
+    makeInsightRow('📱', 'Buy via ', ['strong', 'TrainTime app'], ' to avoid the $6.50 on-board surcharge. PAYG: 11th trip free after 10 in 14 days — only kicks in at ~5 days/week.')
+  );
+
+  panel.append(tally, tallySub, divider, options, insightBox);
 }
 
 // ─── Fare editor ─────────────────────────────────────────────────────────────
@@ -883,6 +965,10 @@ document.getElementById('nextBtn').addEventListener('click', () => changeMonth(1
 document.getElementById('twtBtn').addEventListener('click', selectTWT);
 document.getElementById('clearBtn').addEventListener('click', clearAll);
 document.getElementById('copyLinkBtn').addEventListener('click', copyLink);
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
+}
 </script>
 </body>
 </html>
