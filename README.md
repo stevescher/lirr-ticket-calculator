@@ -64,12 +64,14 @@ Monthly becomes cheaper than individual one-ways at **12 or more weekday trips**
 - **Peak-out override** — right-click (or long-press on mobile) a selected weekday to mark it as peak both ways ($30.50 instead of $26.50). Right-click again to revert
 - **Persistence** — selections are saved per month in `localStorage`, so closing and reopening the tab restores your work
 - **Shareable links** — the URL hash updates on every change; the "Copy Link" button in the header copies a link that restores the exact month and day selections
+- **PWA / installable** — add to your home screen for a native app feel; works fully offline via service worker
+- **Security hardened** — HTTP security headers (CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy) set via `vercel.json`
 
 ---
 
 ## Future plans
 
-A public version of this tool is planned that will support any LIRR zone, route, and commute pattern — not just this specific setup. This repo serves as the foundation for that work.
+A public version of this tool is planned that will support any LIRR zone, route, and commute pattern — not just this specific setup. Planned additions include configurable commute days, per-day fare type defaults, a full station/zone selector, and an off-peak both-ways mode. This repo serves as the foundation for that work.
 
 ---
 
