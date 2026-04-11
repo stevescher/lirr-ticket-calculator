@@ -586,7 +586,7 @@ function loadFromStorage() {
       const day = +d;
       const maxDay = new Date(vYear, vMonth + 1, 0).getDate();
       if (!Number.isInteger(day) || day < 1 || day > maxDay) return;
-      if (mode !== 1 && mode !== 2) return;
+      if (mode !== 1 && mode !== 2 && mode !== 3) return;
       sel.set(dateKey(vYear, vMonth, day), mode);
     });
     return true;
