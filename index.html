@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="LIRR Calc">
-  <link rel="apple-touch-icon" href="/icons/icon-192.svg">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <style>
     :root {
       --primary: #1d4ed8;
@@ -172,6 +172,10 @@
     .day.on.peak-both {
       background: #d97706;
     }
+    /* Off-peak-both mode: green */
+    .day.on.offpeak-both {
+      background: #059669;
+    }
     .day.today { border-color: var(--today); }
     .day.on.today { border-color: #fbbf24; }
     .day:active:not(.blank) { transform: scale(.92); }
@@ -205,6 +209,7 @@
     }
     .legend-dot.blue   { background: var(--primary); }
     .legend-dot.amber  { background: #d97706; }
+    .legend-dot.green  { background: #059669; }
     .legend-dot.empty  { background: var(--border); }
 
     /* ── Cost panel ── */
@@ -431,7 +436,8 @@
     <div class="cal-legend">
       <div class="legend-item"><div class="legend-dot empty"></div>Not going in</div>
       <div class="legend-item"><div class="legend-dot blue"></div>Peak in, off-peak out</div>
-      <div class="legend-item"><div class="legend-dot amber"></div>Peak in, peak out (right-click to set)</div>
+      <div class="legend-item" id="peakBothLegend"><div class="legend-dot amber"></div>Peak in, peak out</div>
+      <div class="legend-item" id="offpeakBothLegend"><div class="legend-dot green"></div>Off-peak both ways</div>
     </div>
   </div>
 
@@ -495,8 +501,7 @@ const fmt = n => '$' + n.toFixed(2);
 // ─── Date helpers ────────────────────────────────────────────────────────────
 const MONTHS = ['January','February','March','April','May','June',
                 'July','August','September','October','November','December'];
-const today = new Date();
-today.setHours(0,0,0,0);
+function getToday() { const d = new Date(); d.setHours(0,0,0,0); return d; }
 
 function dateKey(y, m, d) { return `${y}|${m}|${d}`; }
 function isWeekend(dow) { return dow === 0 || dow === 6; }
@@ -508,12 +513,20 @@ function buildHolidays(year) {
 
   function observed(mo, day, name) {
     const dow = new Date(year, mo, day).getDay();
-    const d = dow === 0 ? day + 1 : dow === 6 ? day - 1 : day;
-    h.set(`${mo}|${d}`, name);
+    if (dow === 0) {
+      h.set(`${mo}|${day + 1}`, name + ' (observed)');
+      h.set(`${mo}|${day}`,     name);
+    } else if (dow === 6) {
+      h.set(`${mo}|${day - 1}`, name + ' (observed)');
+      h.set(`${mo}|${day}`,     name);
+    } else {
+      h.set(`${mo}|${day}`, name);
+    }
   }
   function nthWeekday(mo, wd, n) {
     let d = 1, cnt = 0;
-    while (true) { if (new Date(year, mo, d).getDay() === wd && ++cnt === n) return d; d++; }
+    while (d <= 31) { if (new Date(year, mo, d).getDay() === wd && ++cnt === n) return d; d++; }
+    throw new Error(`No ${n}th weekday ${wd} in month ${mo}`);
   }
   function lastMonday(mo) {
     const d = new Date(year, mo + 1, 0);
@@ -546,6 +559,7 @@ let vYear, vMonth;
 const sel = new Map();
 
 function initView() {
+  const today = getToday();
   const d = today.getDate();
   vYear  = today.getFullYear();
   vMonth = d <= 15 ? today.getMonth() : today.getMonth() + 1;
@@ -570,7 +584,8 @@ function loadFromStorage() {
     sel.clear();
     parsed.forEach(([d, mode]) => {
       const day = +d;
-      if (!Number.isInteger(day) || day < 1 || day > 31) return;
+      const maxDay = new Date(vYear, vMonth + 1, 0).getDate();
+      if (!Number.isInteger(day) || day < 1 || day > maxDay) return;
       if (mode !== 1 && mode !== 2) return;
       sel.set(dateKey(vYear, vMonth, day), mode);
     });
@@ -583,7 +598,7 @@ function updateURL() {
   const days = [];
   sel.forEach((mode, key) => {
     const d = key.split('|')[2];
-    days.push(mode === 2 ? `${d}p` : d);
+    days.push(mode === 2 ? `${d}p` : mode === 3 ? `${d}o` : d);
   });
   const hash = `${vYear}${String(vMonth+1).padStart(2,'0')}${days.length ? ':'+days.join(',') : ''}`;
   history.replaceState(null, '', '#' + hash);
@@ -601,14 +616,16 @@ function loadFromURL() {
   sel.clear();
   if (rest) rest.split(',').forEach(p => {
     const pb = p.endsWith('p');
-    const d  = parseInt(pb ? p.slice(0,-1) : p);
-    if (!isNaN(d) && d >= 1 && d <= 31) sel.set(dateKey(y, m, d), pb ? 2 : 1);
+    const ob = p.endsWith('o');
+    const d  = parseInt((pb || ob) ? p.slice(0,-1) : p);
+    const maxDay = new Date(y, m + 1, 0).getDate();
+    if (!isNaN(d) && d >= 1 && d <= maxDay) sel.set(dateKey(y, m, d), pb ? 2 : ob ? 3 : 1);
   });
   return true;
 }
 
 function copyLink() {
-  navigator.clipboard.writeText(location.href).then(() => {
+  function showCopied() {
     const btn  = document.getElementById('copyLinkBtn');
     const icon = document.getElementById('copyIcon');
     const txt  = document.getElementById('copyBtnText');
@@ -620,11 +637,25 @@ function copyLink() {
       icon.innerHTML = '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>';
       txt.textContent = 'Copy Link';
     }, 2000);
-  });
+  }
+  function fallbackCopy() {
+    const tmp = document.createElement('input');
+    tmp.value = location.href;
+    document.body.appendChild(tmp);
+    tmp.select();
+    try { document.execCommand('copy'); showCopied(); } catch {}
+    document.body.removeChild(tmp);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(location.href).then(showCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
 }
 
 // ─── Calendar ────────────────────────────────────────────────────────────────
 function renderCalendar() {
+  const today = getToday();
   document.getElementById('monthLabel').textContent = `${MONTHS[vMonth]} ${vYear}`;
   const grid = document.getElementById('calGrid');
   grid.innerHTML = '';
@@ -662,9 +693,10 @@ function renderCalendar() {
         we      ? 'we'        : '',
         past    ? 'past'      : '',
         hol     ? 'holiday'   : '',
-        m       ? 'on'        : '',
-        m === 2 ? 'peak-both' : '',
-        isToday ? 'today'     : '',
+        m       ? 'on'           : '',
+        m === 2 ? 'peak-both'   : '',
+        m === 3 ? 'offpeak-both': '',
+        isToday ? 'today'       : '',
       ].filter(Boolean).join(' ');
     }
     refreshCell();
@@ -678,14 +710,16 @@ function renderCalendar() {
     el.addEventListener('contextmenu', e => {
       e.preventDefault();
       if (!sel.has(key) || we) return;
-      sel.set(key, sel.get(key) === 2 ? 1 : 2);
+      const cur = sel.get(key);
+      sel.set(key, cur === 1 ? 2 : cur === 2 ? 3 : 1);
       refreshCell(); persist();
     });
     let pt;
     el.addEventListener('touchstart', () => {
       if (!sel.has(key) || we) return;
       pt = setTimeout(() => {
-        sel.set(key, sel.get(key) === 2 ? 1 : 2);
+        const cur = sel.get(key);
+        sel.set(key, cur === 1 ? 2 : cur === 2 ? 3 : 1);
         refreshCell(); persist();
       }, 500);
     }, { passive: true });
@@ -700,6 +734,7 @@ function persist() { saveToStorage(); updateURL(); updateCosts(); }
 
 // ─── Auto-select Tue/Wed/Thu (skipping holidays) ─────────────────────────────
 function selectTWT() {
+  const today = getToday();
   sel.clear();
   const daysIn   = new Date(vYear, vMonth + 1, 0).getDate();
   const isCurMon = vYear === today.getFullYear() && vMonth === today.getMonth();
@@ -729,16 +764,18 @@ function changeMonth(delta) {
 function dayCost(mode, we) {
   if (we)         return fares.offpeakOw * 2;
   if (mode === 2) return fares.peakOw * 2;
+  if (mode === 3) return fares.offpeakOw * 2;
   return fares.peakOw + fares.offpeakOw;
 }
 
 function calcCosts() {
-  let wdDays = 0, weDays = 0, peakBothDays = 0, indTotal = 0, dpTotal = 0;
+  let wdDays = 0, weDays = 0, peakBothDays = 0, offpeakBothDays = 0, indTotal = 0, dpTotal = 0;
   sel.forEach((mode, k) => {
     const [y,m,d] = k.split('|').map(Number);
     const we = isWeekend(new Date(y,m,d).getDay());
     we ? weDays++ : wdDays++;
     if (mode === 2) peakBothDays++;
+    if (mode === 3) offpeakBothDays++;
     indTotal += dayCost(mode, we);
     dpTotal  += we ? fares.dayPassWe : fares.dayPassWd;
   });
@@ -765,7 +802,7 @@ function calcCosts() {
     else weeklyCombo += cost;
   });
 
-  return { total, wdDays, weDays, peakBothDays, defaultTrip,
+  return { total, wdDays, weDays, peakBothDays, offpeakBothDays, defaultTrip,
            monthly: fares.monthly, individual: indTotal, dayPasses: dpTotal,
            weeklyCombo, passesUsed };
 }
@@ -789,15 +826,16 @@ function updateCosts() {
     return;
   }
 
-  const { total, wdDays, weDays, peakBothDays, defaultTrip,
+  const { total, wdDays, weDays, peakBothDays, offpeakBothDays, defaultTrip,
           monthly, individual, dayPasses, weeklyCombo, passesUsed } = c;
-  const normalDays = wdDays - peakBothDays;
+  const normalDays = wdDays - peakBothDays - offpeakBothDays;
 
-  let indNote = peakBothDays > 0 && normalDays > 0
-    ? `${normalDays} day${normalDays!==1?'s':''} × ${fmt(fares.peakOw+fares.offpeakOw)} + ${peakBothDays} peak-out × ${fmt(fares.peakOw*2)}`
-    : peakBothDays > 0
-    ? `${peakBothDays} day${peakBothDays!==1?'s':''} × ${fmt(fares.peakOw*2)} (peak both ways)`
-    : `${fmt(fares.peakOw+fares.offpeakOw)}/day — peak in, off-peak out`;
+  const noteParts = [];
+  if (normalDays > 0)      noteParts.push(`${normalDays} × ${fmt(fares.peakOw+fares.offpeakOw)} (peak in/off-peak out)`);
+  if (peakBothDays > 0)    noteParts.push(`${peakBothDays} × ${fmt(fares.peakOw*2)} (peak both)`);
+  if (offpeakBothDays > 0) noteParts.push(`${offpeakBothDays} × ${fmt(fares.offpeakOw*2)} (off-peak both)`);
+  if (weDays > 0)          noteParts.push(`${weDays} weekend × ${fmt(fares.offpeakOw*2)}`);
+  let indNote = noteParts.join(', ');
   indNote += ' — buy via TrainTime app to skip $6.50 on-board fee';
 
   const weeklyLabel = passesUsed > 0
@@ -809,7 +847,7 @@ function updateCosts() {
   const allOpts = [
     { id:'monthly',    name:'Monthly Pass',        cost:monthly,     note:'Unlimited rides all month' },
     { id:'individual', name:'Individual One-Ways',  cost:individual,  note:indNote },
-    { id:'daypass',    name:'Day Passes',            cost:dayPasses,   note:`Unlimited same-day travel — ${fmt(fares.dayPassWd)}/weekday${weDays>0?`, ${fmt(fares.dayPassWe)}/weekend`:''}` },
+    { id:'daypass',    name:'Day Passes',            cost:dayPasses,   note:`Unlimited same-day travel — ${fmt(fares.dayPassWd)}/weekday${weDays>0?`, ${fmt(fares.dayPassWe)}/weekend (same as RT — saves only on 3+ trips/day)`:''}` },
     { id:'weekly',     name:weeklyLabel,             cost:weeklyCombo, note:weeklyNote },
   ];
 
@@ -883,7 +921,8 @@ function updateCosts() {
     options.append(optDiv);
   });
 
-  const breakeven = Math.ceil(fares.monthly / defaultTrip);
+  const avgTripCost = wdDays > 0 ? (individual - weDays * dayCost(1, true)) / wdDays : defaultTrip;
+  const breakeven = Math.ceil(fares.monthly / avgTripCost);
   const toBreak   = breakeven - wdDays;
 
   const insightBox = document.createElement('div');
@@ -920,7 +959,7 @@ function updateCosts() {
   }
 
   insightBox.append(
-    makeInsightRow('📊', 'Monthly breakeven: ', ['strong', `${breakeven} weekday trips`], ` (${fmt(fares.monthly)} ÷ ${fmt(defaultTrip)}/day).`),
+    makeInsightRow('📊', 'Monthly breakeven: ', ['strong', `${breakeven} weekday trips`], ` (${fmt(fares.monthly)} ÷ ${fmt(avgTripCost)}/day).`),
     makeInsightRow('📱', 'Buy via ', ['strong', 'TrainTime app'], ' to avoid the $6.50 on-board surcharge. PAYG: 11th trip free after 10 in 14 days — only kicks in at ~5 days/week.')
   );
 
@@ -959,6 +998,13 @@ if (!loadFromURL()) {
   renderCalendar(); updateURL(); updateCosts();
 }
 initFareEditor();
+
+(function() {
+  const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const gesture = isTouch ? 'long-press' : 'right-click';
+  document.getElementById('peakBothLegend').lastChild.textContent    = `Peak in, peak out (${gesture} to cycle)`;
+  document.getElementById('offpeakBothLegend').lastChild.textContent = `Off-peak both ways (${gesture} to cycle)`;
+})();
 
 document.getElementById('prevBtn').addEventListener('click', () => changeMonth(-1));
 document.getElementById('nextBtn').addEventListener('click', () => changeMonth(1));

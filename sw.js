@@ -1,5 +1,5 @@
-const CACHE = 'lirr-calc-v1';
-const ASSETS = ['/', '/index.html', '/icons/icon-192.svg', '/icons/icon-512.svg'];
+const CACHE = 'lirr-calc-v2';
+const ASSETS = ['/', '/index.html', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/icon-192.svg', '/icons/icon-512.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
