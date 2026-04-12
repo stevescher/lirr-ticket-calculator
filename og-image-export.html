@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OG Image Export Tool</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: white; padding: 2rem; }
+    h1 { font-size: 1.25rem; margin-bottom: 1rem; color: #94a3b8; }
+    canvas { display: block; max-width: 100%; border-radius: 8px; }
+    button {
+      margin-top: 1rem;
+      padding: .75rem 1.5rem;
+      background: #1d4ed8;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { background: #1e40af; }
+    p { margin-top: .75rem; font-size: .875rem; color: #64748b; }
+  </style>
+</head>
+<body>
+  <h1>OG Image Export — LIRR Ticket Calculator</h1>
+  <canvas id="canvas" width="1200" height="630"></canvas>
+  <br>
+  <button onclick="download()">Download og-image.png</button>
+  <p>Save the downloaded file as <code>og-image.png</code> in the project root.</p>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0);
+    };
+    img.src = 'og-image.svg';
+
+    function download() {
+      const a = document.createElement('a');
+      a.download = 'og-image.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    }
+  </script>
+</body>
+</html>
