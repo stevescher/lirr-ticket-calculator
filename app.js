@@ -681,7 +681,20 @@ function updateCosts() {
     makeInsightRow('phone', 'Buy via ', ['strong', 'TrainTime app'], ' to avoid the $6.50 on-board surcharge.')
   );
 
-  panel.append(tally, tallySub, divider, options, insightBox);
+  // Savings callout — show when best option saves meaningful money vs runner-up
+  let savingsEl = null;
+  if (runnerUp && (runnerUp.cost - bestOpt.cost) > 0.50) {
+    const saved = runnerUp.cost - bestOpt.cost;
+    const names = { monthly: 'monthly pass', individual: 'individual tickets', weekly: 'weekly passes', daypass: 'day passes' };
+    savingsEl = document.createElement('div');
+    savingsEl.className = 'savings-callout';
+    savingsEl.innerHTML = `<div class="savings-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>`
+      + `<div class="savings-text">You save ${fmt(saved)} with ${names[bestOpt.id] || bestOpt.name}<span>vs ${names[runnerUp.id] || runnerUp.name} at ${fmt(runnerUp.cost)}</span></div>`;
+  }
+
+  panel.append(tally, tallySub, divider, options);
+  if (savingsEl) panel.append(savingsEl);
+  panel.append(insightBox);
   updateProjection();
 }
 
