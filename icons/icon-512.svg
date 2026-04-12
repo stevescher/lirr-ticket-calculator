@@ -1,20 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="100" fill="#1d4ed8"/>
-  <!-- Train body -->
-  <rect x="116" y="192" width="280" height="160" rx="26" fill="white"/>
-  <!-- Windows -->
-  <rect x="148" y="224" width="74" height="54" rx="10" fill="#1d4ed8"/>
-  <rect x="244" y="224" width="74" height="54" rx="10" fill="#1d4ed8"/>
-  <rect x="340" y="224" width="42" height="54" rx="10" fill="#1d4ed8"/>
-  <!-- Door line -->
-  <line x1="288" y1="296" x2="288" y2="352" stroke="#1d4ed8" stroke-width="8"/>
-  <!-- Wheels -->
-  <circle cx="186" cy="368" r="32" fill="white"/>
-  <circle cx="186" cy="368" r="16" fill="#1d4ed8"/>
-  <circle cx="326" cy="368" r="32" fill="white"/>
-  <circle cx="326" cy="368" r="16" fill="#1d4ed8"/>
-  <!-- Rail -->
-  <rect x="80" y="396" width="352" height="14" rx="6" fill="rgba(255,255,255,0.5)"/>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#1e3a8a"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="101" fill="url(#bg)"/>
   <!-- Dollar sign -->
-  <text x="256" y="168" font-family="-apple-system,sans-serif" font-size="60" font-weight="700" fill="white" text-anchor="middle">$</text>
+  <text x="256" y="144" font-family="-apple-system,sans-serif" font-size="85" font-weight="800" fill="white" text-anchor="middle">$</text>
+  <!-- Train body -->
+  <rect x="59" y="163" width="394" height="221" rx="37" fill="white"/>
+  <!-- Windows -->
+  <rect x="85" y="200" width="112" height="77" rx="13" fill="#1d4ed8"/>
+  <rect x="221" y="200" width="112" height="77" rx="13" fill="#1d4ed8"/>
+  <rect x="357" y="200" width="69" height="77" rx="13" fill="#1d4ed8"/>
+  <!-- Wheels -->
+  <circle cx="144" cy="411" r="48" fill="white"/>
+  <circle cx="144" cy="411" r="21" fill="#1d4ed8"/>
+  <circle cx="368" cy="411" r="48" fill="white"/>
+  <circle cx="368" cy="411" r="21" fill="#1d4ed8"/>
+  <!-- Rail -->
+  <rect x="35" y="443" width="442" height="16" rx="8" fill="rgba(255,255,255,0.5)"/>
 </svg>

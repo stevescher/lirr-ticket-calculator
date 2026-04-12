@@ -27,6 +27,31 @@
   <meta name="twitter:description" content="Compare LIRR monthly pass vs individual tickets, day passes, and weekly passes for your commute. Interactive calendar with automatic holiday exclusion.">
   <meta name="twitter:image" content="https://lirr-ticket-calculator.vercel.app/og-image.png">
 
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "LIRR Ticket Calculator",
+    "description": "Compare the cost of a monthly pass vs individual LIRR tickets for your commute. Interactive calendar, holiday exclusion, and shareable links.",
+    "url": "https://lirr-ticket-calculator.vercel.app",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "Any",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "browserRequirements": "Requires JavaScript",
+    "privacyPolicy": "https://lirr-ticket-calculator.vercel.app/privacy.html",
+    "termsOfService": "https://lirr-ticket-calculator.vercel.app/terms.html",
+    "featureList": [
+      "Interactive monthly calendar",
+      "Federal holiday exclusion",
+      "Peak and off-peak fare modes",
+      "Monthly pass vs individual ticket comparison",
+      "Shareable links via URL hash",
+      "Works offline (PWA)"
+    ]
+  }
+  </script>
+
   <!-- PWA -->
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#1d4ed8">
@@ -395,7 +420,8 @@
       margin-bottom: .5rem;
     }
     .insight-row:last-child { margin-bottom: 0; }
-    .insight-icon { flex-shrink: 0; margin-top: 1px; }
+    .insight-icon { flex-shrink: 0; margin-top: 2px; }
+    .insight-icon svg { width: 14px; height: 14px; display: block; }
 
     /* ── Projection ── */
     .projection-sub {
@@ -586,6 +612,23 @@
       .station-swap { align-self: center; margin-top: 0; }
     }
 
+    /* ── Support callout ── */
+    .support-callout {
+      text-align: center;
+      padding: 1rem 1.5rem;
+      margin-top: 1.5rem;
+      font-size: .85rem;
+      color: var(--text-2);
+    }
+    .support-callout a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .support-callout a:hover {
+      text-decoration: underline;
+    }
+
     /* ── Footer ── */
     .site-footer {
       background: var(--card);
@@ -655,7 +698,7 @@
       <button class="chip" data-pattern="twt">Tue-Thu</button>
       <button class="chip" data-pattern="mwf">Mon/Wed/Fri</button>
       <button class="chip" data-pattern="mtwtf">Mon-Fri</button>
-      <button class="chip" data-pattern="clear">&#215; Clear</button>
+      <button class="chip" data-pattern="clear"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Clear</button>
     </div>
     <div class="cal-actions-label" style="margin-top:.75rem">Default trip mode</div>
     <div class="cal-actions">
@@ -689,7 +732,10 @@
 
 <!-- Fare editor -->
 <div class="fare-wrap">
-  <button class="fare-toggle" id="fareToggleBtn" aria-expanded="false" aria-controls="fareEditor">&#9881; Edit fare prices</button>
+  <button class="fare-toggle" id="fareToggleBtn" aria-expanded="false" aria-controls="fareEditor">
+    <svg id="fareToggleIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span id="fareToggleTxt">Edit fare prices</span>
+  </button>
   <div class="fare-editor" id="fareEditor">
     <div class="fare-editor-title">Fare Prices — Effective January 4, 2026</div>
     <div class="fare-grid">
@@ -722,6 +768,10 @@
       Peak = trains arriving NYC 6–10am or departing NYC 4–8pm on weekdays. Peak in + off-peak out = $<span id="perDayLabel"></span>/day.
     </div>
   </div>
+</div>
+
+<div class="support-callout">
+  Find this useful? <a href="https://buymeacoffee.com/stevescher" target="_blank" rel="noopener noreferrer">Buy me a coffee</a> ☕
 </div>
 
 <footer class="site-footer">
@@ -1317,12 +1367,22 @@ function updateCosts() {
   const insightBox = document.createElement('div');
   insightBox.className = 'insight-box';
 
-  function makeInsightRow(iconText, ...parts) {
+  const ICONS = {
+    tip:      `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>`,
+    calendar: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+    chart:    `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
+    phone:    `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="18" r=".5" fill="currentColor"/></svg>`,
+    check:    `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+    info:     `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+    tag:      `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7" stroke-width="3"/></svg>`,
+  };
+
+  function makeInsightRow(iconKey, ...parts) {
     const row = document.createElement('div');
     row.className = 'insight-row';
     const iconSpan = document.createElement('span');
     iconSpan.className = 'insight-icon';
-    iconSpan.textContent = iconText;
+    iconSpan.innerHTML = ICONS[iconKey] ?? '';
     const textSpan = document.createElement('span');
     parts.forEach(part => {
       if (typeof part === 'string') {
@@ -1342,40 +1402,40 @@ function updateCosts() {
   const nearTie = runnerUp && (runnerUp.cost - bestOpt.cost) <= 5 && (runnerUp.cost - bestOpt.cost) > 0.005;
 
   if (wdDays === 0) {
-    insightBox.append(makeInsightRow('💡', 'Only weekend days — off-peak fares both ways.'));
+    insightBox.append(makeInsightRow('tip', 'Only weekend days — off-peak fares both ways.'));
   } else if (bestOpt.id === 'individual') {
-    insightBox.append(makeInsightRow('💡', 'Individual tickets save ', ['strong', fmt(monthly - individual)], ' vs monthly for this selection.'));
+    insightBox.append(makeInsightRow('tip', 'Individual tickets save ', ['strong', fmt(monthly - individual)], ' vs monthly for this selection.'));
     if (toBreak > 0 && toBreak <= 6)
-      insightBox.append(makeInsightRow('📅', 'Add ', ['strong', `${toBreak} more weekday${toBreak!==1?'s':''}`], ' and the monthly pass becomes cheapest.'));
+      insightBox.append(makeInsightRow('calendar', 'Add ', ['strong', `${toBreak} more weekday${toBreak!==1?'s':''}`], ' and the monthly pass becomes cheapest.'));
   } else if (bestOpt.id === 'monthly') {
-    insightBox.append(makeInsightRow('✅', 'Monthly pass saves ', ['strong', fmt(individual - monthly)], ' vs individual tickets.'));
+    insightBox.append(makeInsightRow('check', 'Monthly pass saves ', ['strong', fmt(individual - monthly)], ' vs individual tickets.'));
   } else if (bestOpt.id === 'weekly') {
-    insightBox.append(makeInsightRow('✅', `${weeklyLabel} saves `, ['strong', fmt(individual - weeklyCombo)], ' vs individual tickets.'));
+    insightBox.append(makeInsightRow('check', `${weeklyLabel} saves `, ['strong', fmt(individual - weeklyCombo)], ' vs individual tickets.'));
     if (passesUsed > 0)
-      insightBox.append(makeInsightRow('💡', `${passesUsed} week${passesUsed>1?'s':''} with 5+ days get a weekly pass (${fmt(fares.weekly)}); remaining days bought individually.`));
+      insightBox.append(makeInsightRow('tip', `${passesUsed} week${passesUsed>1?'s':''} with 5+ days get a weekly pass (${fmt(fares.weekly)}); remaining days bought individually.`));
   } else if (bestOpt.id === 'daypass') {
-    insightBox.append(makeInsightRow('✅', 'Day passes save ', ['strong', fmt(individual - dayPasses)], ' vs individual tickets.'));
-    insightBox.append(makeInsightRow('💡', `Day passes (${fmt(fares.dayPassWd)}/weekday) beat round-trip tickets — useful if you make 3+ trips in a day.`));
+    insightBox.append(makeInsightRow('check', 'Day passes save ', ['strong', fmt(individual - dayPasses)], ' vs individual tickets.'));
+    insightBox.append(makeInsightRow('tip', `Day passes (${fmt(fares.dayPassWd)}/weekday) beat round-trip tickets — useful if you make 3+ trips in a day.`));
   }
 
   if (nearTie) {
     const diff = fmt(runnerUp.cost - bestOpt.cost);
     const names = { monthly: 'Monthly pass', individual: 'Individual tickets', weekly: weeklyLabel, daypass: 'Day passes' };
-    insightBox.append(makeInsightRow('🤏', `${names[runnerUp.id]} is only `, ['strong', diff], ' more — consider convenience.'));
+    insightBox.append(makeInsightRow('info', `${names[runnerUp.id]} is only `, ['strong', diff], ' more — consider convenience.'));
   }
 
   // CityTicket awareness
   const fromSt = findStation(document.getElementById('fromStation')?.value || '');
   const toSt   = findStation(document.getElementById('toStation')?.value || '');
   if (weDays > 0 && fromSt && toSt && isCityTicketEligible(fromSt, toSt)) {
-    insightBox.append(makeInsightRow('🎫',
+    insightBox.append(makeInsightRow('tag',
       'Weekend rides between City Zone stations qualify for ', ['strong', 'CityTicket'],
       ` (${fmt(7.25)} peak / ${fmt(5.25)} off-peak one-way) — buy at the station or via the MTA app.`));
   }
 
   insightBox.append(
-    makeInsightRow('📊', 'Monthly breakeven: ', ['strong', `${breakeven} weekday trips`], ` (${fmt(fares.monthly)} ÷ ${fmt(avgTripCost)}/day).`),
-    makeInsightRow('📱', 'Buy via ', ['strong', 'TrainTime app'], ' to avoid the $6.50 on-board surcharge.')
+    makeInsightRow('chart', 'Monthly breakeven: ', ['strong', `${breakeven} weekday trips`], ` (${fmt(fares.monthly)} ÷ ${fmt(avgTripCost)}/day).`),
+    makeInsightRow('phone', 'Buy via ', ['strong', 'TrainTime app'], ' to avoid the $6.50 on-board surcharge.')
   );
 
   panel.append(tally, tallySub, divider, options, insightBox);
@@ -1475,10 +1535,14 @@ function initFareEditor() {
       if (!isNaN(v) && v >= 0) { fares[key] = v; updatePerDayLabel(); updateCosts(); }
     });
   });
+  const SVG_GEAR = `<svg id="fareToggleIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`;
+  const SVG_X_SM = `<svg id="fareToggleIcon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
   document.getElementById('fareToggleBtn').addEventListener('click', () => {
     const ed = document.getElementById('fareEditor'), btn = document.getElementById('fareToggleBtn');
     const open = ed.classList.toggle('open');
-    btn.textContent = open ? '✕ Close fare editor' : '⚙ Edit fare prices';
+    btn.innerHTML = open
+      ? `${SVG_X_SM} <span id="fareToggleTxt">Close fare editor</span>`
+      : `${SVG_GEAR} <span id="fareToggleTxt">Edit fare prices</span>`;
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
   });
   updatePerDayLabel();
