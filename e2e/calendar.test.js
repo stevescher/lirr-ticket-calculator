@@ -188,8 +188,8 @@ test('day headers have role="columnheader"', async ({ page }) => {
   await expect(headers).toHaveCount(7);
 });
 
-test('month label has role="status"', async ({ page }) => {
-  await expect(page.locator('#monthLabel')).toHaveAttribute('role', 'status');
+test('month label has aria-live="polite"', async ({ page }) => {
+  await expect(page.locator('#monthLabel')).toHaveAttribute('aria-live', 'polite');
 });
 
 test('cost panel has aria-live="polite"', async ({ page }) => {
@@ -203,15 +203,15 @@ test('day buttons have aria-label with day name and date', async ({ page }) => {
   expect(label).toMatch(/\w+day.*\d+/i);
 });
 
-test('selected day aria-pressed="true"', async ({ page }) => {
+test('selected day aria-selected="true"', async ({ page }) => {
   const btn = await getFirstWeekday(page);
   await btn.click();
-  await expect(btn).toHaveAttribute('aria-pressed', 'true');
+  await expect(btn).toHaveAttribute('aria-selected', 'true');
 });
 
-test('unselected day aria-pressed="false"', async ({ page }) => {
+test('unselected day aria-selected="false"', async ({ page }) => {
   const btn = await getFirstWeekday(page);
-  await expect(btn).toHaveAttribute('aria-pressed', 'false');
+  await expect(btn).toHaveAttribute('aria-selected', 'false');
 });
 
 test('panelContent updates when day is toggled', async ({ page }) => {

@@ -6,11 +6,12 @@
  */
 import { test, expect } from '@playwright/test';
 
-const CACHE_NAME = 'lirr-calc-v7';
+const CACHE_NAME = 'lirr-calc-v8';
 
 const EXPECTED_ASSETS = [
   '/',
   '/index.html',
+  '/app.js',
   '/lirr-data.js',
   '/manifest.json',
   '/icons/icon-192.png',
