@@ -586,7 +586,7 @@ function loadFromStorage() {
       const day = +d;
       const maxDay = new Date(vYear, vMonth + 1, 0).getDate();
       if (!Number.isInteger(day) || day < 1 || day > maxDay) return;
-      if (mode !== 1 && mode !== 2 && mode !== 3) return;
+      if (!VALID_MODES.has(mode)) return;
       sel.set(dateKey(vYear, vMonth, day), mode);
     });
     return true;
@@ -600,6 +600,7 @@ function updateURL() {
     const d = key.split('|')[2];
     days.push(mode === 2 ? `${d}p` : mode === 3 ? `${d}o` : d);
   });
+  days.sort((a, b) => parseInt(a) - parseInt(b));
   const hash = `${vYear}${String(vMonth+1).padStart(2,'0')}${days.length ? ':'+days.join(',') : ''}`;
   history.replaceState(null, '', '#' + hash);
 }
@@ -761,6 +762,9 @@ function changeMonth(delta) {
 }
 
 // ─── Cost calculation ────────────────────────────────────────────────────────
+// All valid day modes: 1=peak-in/off-peak-out, 2=peak-both, 3=off-peak-both
+const VALID_MODES = new Set([1, 2, 3]);
+
 function dayCost(mode, we) {
   if (we)         return fares.offpeakOw * 2;
   if (mode === 2) return fares.peakOw * 2;
