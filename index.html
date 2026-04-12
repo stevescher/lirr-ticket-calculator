@@ -3,13 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LIRR Ticket Calculator</title>
+  <title>LIRR Ticket Calculator — Compare Monthly Pass vs Individual Fares</title>
+
+  <!-- Favicon -->
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/icons/icon-192.png" sizes="192x192" type="image/png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <!-- SEO -->
+  <meta name="description" content="Compare LIRR monthly pass vs individual tickets, day passes, and weekly passes for your commute. Interactive calendar with automatic holiday exclusion and shareable links.">
+  <link rel="canonical" href="https://lirr-ticket-calculator.vercel.app/">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://lirr-ticket-calculator.vercel.app/">
+  <meta property="og:title" content="LIRR Ticket Calculator — Compare Monthly Pass vs Individual Fares">
+  <meta property="og:description" content="Compare LIRR monthly pass vs individual tickets, day passes, and weekly passes for your commute. Interactive calendar with automatic holiday exclusion.">
+  <meta property="og:image" content="https://lirr-ticket-calculator.vercel.app/og-image.png">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="LIRR Ticket Calculator — Compare Monthly Pass vs Individual Fares">
+  <meta name="twitter:description" content="Compare LIRR monthly pass vs individual tickets, day passes, and weekly passes for your commute. Interactive calendar with automatic holiday exclusion.">
+  <meta name="twitter:image" content="https://lirr-ticket-calculator.vercel.app/og-image.png">
+
+  <!-- PWA -->
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#1d4ed8">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="LIRR Calc">
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <style>
     :root {
       --primary: #1d4ed8;
@@ -39,6 +62,23 @@
       color: var(--text);
       min-height: 100vh;
     }
+
+    /* ── Skip link ── */
+    .skip-link {
+      position: absolute;
+      top: -100%;
+      left: 1rem;
+      background: var(--primary);
+      color: white;
+      padding: .5rem 1.25rem;
+      border-radius: 0 0 8px 8px;
+      font-size: .875rem;
+      font-weight: 600;
+      text-decoration: none;
+      z-index: 100;
+      transition: top .1s;
+    }
+    .skip-link:focus { top: 0; outline: 3px solid white; outline-offset: 2px; }
 
     /* ── Header ── */
     header {
@@ -125,6 +165,16 @@
       white-space: nowrap;
     }
     .chip:hover { background: var(--primary-bg); color: var(--primary); border-color: #bfdbfe; }
+    .chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .chip.active:hover { background: var(--primary-light); border-color: var(--primary-light); }
+    .cal-actions-label {
+      font-size: .6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--text-3);
+      margin-bottom: .25rem;
+    }
 
     .cal-grid {
       display: grid;
@@ -154,6 +204,15 @@
       transition: background .1s, color .1s, transform .05s;
       border: 2px solid transparent;
       position: relative;
+      background: transparent;
+      color: inherit;
+      font-family: inherit;
+      padding: 0;
+    }
+    .day:focus-visible {
+      outline: 3px solid var(--primary);
+      outline-offset: 2px;
+      z-index: 1;
     }
     .day:hover:not(.blank):not(.on) { background: #e0e7ff; color: var(--primary); }
     .day.blank { cursor: default; }
@@ -175,6 +234,21 @@
     /* Off-peak-both mode: green */
     .day.on.offpeak-both {
       background: #059669;
+    }
+    /* Non-color mode badges (WCAG 1.4.1) */
+    .day.on.peak-both::before {
+      content: 'P';
+      position: absolute;
+      top: 2px; right: 3px;
+      font-size: .45rem; font-weight: 900; line-height: 1;
+      color: rgba(255,255,255,.85);
+    }
+    .day.on.offpeak-both::before {
+      content: 'O';
+      position: absolute;
+      top: 2px; right: 3px;
+      font-size: .45rem; font-weight: 900; line-height: 1;
+      color: rgba(255,255,255,.85);
     }
     .day.today { border-color: var(--today); }
     .day.on.today { border-color: #fbbf24; }
@@ -323,6 +397,40 @@
     .insight-row:last-child { margin-bottom: 0; }
     .insight-icon { flex-shrink: 0; margin-top: 1px; }
 
+    /* ── Projection ── */
+    .projection-sub {
+      font-size: .75rem; color: var(--text-3); margin-bottom: .75rem;
+    }
+    .proj-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .625rem .75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: .5rem;
+      cursor: pointer;
+      transition: background .12s, border-color .12s;
+    }
+    .proj-row:hover { background: #f0f9ff; border-color: var(--accent); }
+    .proj-row:last-child { margin-bottom: 0; }
+    .proj-month {
+      font-weight: 600; font-size: .9rem; color: var(--text-1);
+    }
+    .proj-days {
+      font-size: .8rem; color: var(--text-3);
+    }
+    .proj-right { text-align: right; }
+    .proj-cost {
+      font-weight: 700; font-size: .9rem; color: var(--accent);
+    }
+    .proj-best {
+      font-size: .75rem; color: var(--text-3);
+    }
+    .proj-current {
+      background: #f0f9ff; border-color: var(--accent);
+    }
+
     .empty {
       display: flex;
       flex-direction: column;
@@ -397,40 +505,163 @@
       border-top: 1px solid var(--border);
     }
 
+    /* ── Station selector ── */
+    .station-bar {
+      max-width: 1060px;
+      margin: 1.25rem auto 0;
+      padding: 0 1.25rem;
+    }
+    .station-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .station-field {
+      display: flex;
+      flex-direction: column;
+      gap: .25rem;
+      flex: 1;
+      min-width: 160px;
+    }
+    .station-field label {
+      font-size: .6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--text-2);
+    }
+    .station-field select {
+      font-size: .9375rem;
+      padding: .5rem .75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+      color: var(--text);
+      font-family: inherit;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right .75rem center;
+      padding-right: 2rem;
+    }
+    .station-field select:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+    }
+    .station-swap {
+      width: 34px; height: 34px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.125rem;
+      color: var(--text-2);
+      flex-shrink: 0;
+      margin-top: 1rem;
+      transition: background .15s, border-color .15s;
+    }
+    .station-swap:hover { background: var(--bg); border-color: var(--primary-light); }
+    .station-zone-tag {
+      font-size: .75rem;
+      color: var(--text-3);
+      margin-top: .125rem;
+    }
+
     @media (max-width: 720px) {
       .layout { grid-template-columns: 1fr; }
       header { gap: .25rem; }
       .tally { font-size: 1.5rem; }
+      .station-card { flex-direction: column; align-items: stretch; }
+      .station-swap { align-self: center; margin-top: 0; }
     }
+
+    /* ── Footer ── */
+    .site-footer {
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      margin-top: 1.5rem;
+    }
+    .site-footer-inner {
+      font-size: .8rem;
+      color: var(--text-3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: .375rem .625rem;
+      max-width: 1060px;
+      margin: 0 auto;
+    }
+    .site-footer a { color: var(--text-2); text-decoration: none; }
+    .site-footer a:hover { color: var(--primary); text-decoration: underline; }
+    .footer-sep { opacity: .35; }
   </style>
 </head>
 <body>
+<a href="#calGrid" class="skip-link">Skip to calendar</a>
 
 <header>
   <div>
     <h1>LIRR Ticket Calculator</h1>
-    <div class="sub">Hicksville → Penn Station &nbsp;·&nbsp; Zone 7</div>
+    <div class="sub" id="headerSub">Select your stations above</div>
   </div>
-  <button class="share-btn" id="copyLinkBtn">
-    <svg id="copyIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  <button class="share-btn" id="copyLinkBtn" aria-label="Copy link to current selections">
+    <svg id="copyIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
     </svg>
     <span id="copyBtnText">Copy Link</span>
   </button>
 </header>
 
+<div class="station-bar">
+  <div class="station-card">
+    <div class="station-field">
+      <label>From</label>
+      <select id="fromStation"></select>
+      <div class="station-zone-tag" id="fromZoneTag"></div>
+    </div>
+    <button class="station-swap" id="swapBtn" title="Swap stations" aria-label="Swap stations">&#8646;</button>
+    <div class="station-field">
+      <label>To</label>
+      <select id="toStation"></select>
+      <div class="station-zone-tag" id="toZoneTag"></div>
+    </div>
+  </div>
+</div>
+
 <div class="layout">
 
   <!-- Calendar -->
   <div class="card">
     <div class="cal-nav">
-      <button class="arrow" id="prevBtn" title="Previous month">&#8592;</button>
-      <h2 id="monthLabel"></h2>
-      <button class="arrow" id="nextBtn" title="Next month">&#8594;</button>
+      <button class="arrow" id="prevBtn" title="Previous month" aria-label="Previous month">&#8592;</button>
+      <h2 id="monthLabel" role="status" aria-live="polite"></h2>
+      <button class="arrow" id="nextBtn" title="Next month" aria-label="Next month">&#8594;</button>
     </div>
+    <div class="cal-actions-label">Commute days</div>
     <div class="cal-actions">
-      <button class="chip" id="twtBtn">&#10003; Select All Tue/Wed/Thu</button>
-      <button class="chip" id="clearBtn">&#215; Clear All</button>
+      <button class="chip" data-pattern="twt">Tue-Thu</button>
+      <button class="chip" data-pattern="mwf">Mon/Wed/Fri</button>
+      <button class="chip" data-pattern="mtwtf">Mon-Fri</button>
+      <button class="chip" data-pattern="clear">&#215; Clear</button>
+    </div>
+    <div class="cal-actions-label" style="margin-top:.75rem">Default trip mode</div>
+    <div class="cal-actions">
+      <button class="chip" data-mode="1"><span class="legend-dot blue" style="display:inline-block;vertical-align:middle;margin-right:.25rem"></span>Peak in / Off-peak out</button>
+      <button class="chip" data-mode="2"><span class="legend-dot amber" style="display:inline-block;vertical-align:middle;margin-right:.25rem"></span>Peak both</button>
+      <button class="chip" data-mode="3"><span class="legend-dot green" style="display:inline-block;vertical-align:middle;margin-right:.25rem"></span>Off-peak both</button>
     </div>
     <div class="cal-grid" id="calGrid"></div>
     <div class="cal-legend">
@@ -444,14 +675,21 @@
   <!-- Cost panel -->
   <div class="card">
     <div class="panel-title">Cost Comparison</div>
-    <div id="panelContent"></div>
+    <div id="panelContent" aria-live="polite" aria-atomic="false"></div>
+  </div>
+
+  <!-- Multi-month projection -->
+  <div class="card" id="projectionCard" style="display:none">
+    <div class="panel-title">3-Month Projection</div>
+    <div class="projection-sub">Based on your commute pattern · click a month to edit</div>
+    <div id="projectionContent"></div>
   </div>
 
 </div>
 
 <!-- Fare editor -->
 <div class="fare-wrap">
-  <button class="fare-toggle" id="fareToggleBtn">&#9881; Edit fare prices</button>
+  <button class="fare-toggle" id="fareToggleBtn" aria-expanded="false" aria-controls="fareEditor">&#9881; Edit fare prices</button>
   <div class="fare-editor" id="fareEditor">
     <div class="fare-editor-title">Fare Prices — Effective January 4, 2026</div>
     <div class="fare-grid">
@@ -481,11 +719,24 @@
       </div>
     </div>
     <div class="fare-note">
-      Peak = trains arriving NYC 6–10am or departing NYC 4–8pm on weekdays. Her trips: peak inbound + off-peak return = $<span id="perDayLabel"></span>/day.
+      Peak = trains arriving NYC 6–10am or departing NYC 4–8pm on weekdays. Peak in + off-peak out = $<span id="perDayLabel"></span>/day.
     </div>
   </div>
 </div>
 
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <span>Not affiliated with MTA or LIRR</span>
+    <span class="footer-sep">·</span>
+    <a href="/privacy.html">Privacy Policy</a>
+    <span class="footer-sep">·</span>
+    <a href="/terms.html">Terms of Use</a>
+    <span class="footer-sep">·</span>
+    <span>© 2026 Steve Scher</span>
+  </div>
+</footer>
+
+<script src="lirr-data.js"></script>
 <script>
 // ─── Fares ──────────────────────────────────────────────────────────────────
 const fares = {
@@ -497,6 +748,20 @@ const fares = {
   dayPassWe:   22.50,
 };
 const fmt = n => '$' + n.toFixed(2);
+// All valid day modes: 1=peak-in/off-peak-out, 2=peak-both, 3=off-peak-both
+const VALID_MODES = new Set([1, 2, 3]);
+
+// ─── Presets ────────────────────────────────────────────────────────────────
+// ?preset=<name> loads a named configuration for bookmarking
+const PRESETS = {
+  daniela: { from: 'Hicksville', to: 'Penn Station', mode: 1, pattern: 'twt' },
+};
+
+function getPreset() {
+  const params = new URLSearchParams(window.location.search);
+  const name = params.get('preset');
+  return name ? PRESETS[name.toLowerCase()] || null : null;
+}
 
 // ─── Date helpers ────────────────────────────────────────────────────────────
 const MONTHS = ['January','February','March','April','May','June',
@@ -567,6 +832,36 @@ function initView() {
 }
 
 // ─── localStorage ────────────────────────────────────────────────────────────
+// ─── Settings persistence (station, mode, pattern) ──────────────────────
+const SETTINGS_KEY = 'lirr-settings';
+
+function saveSettings() {
+  const fromSel = document.getElementById('fromStation');
+  const toSel   = document.getElementById('toStation');
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      from:    fromSel ? fromSel.value : null,
+      to:      toSel   ? toSel.value   : null,
+      mode:    defaultMode,
+      pattern: activePattern,
+    }));
+  } catch {}
+}
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (!s || typeof s !== 'object') return null;
+    if (s.from && !findStation(s.from)) s.from = null;
+    if (s.to   && !findStation(s.to))   s.to   = null;
+    if (!VALID_MODES.has(s.mode)) s.mode = 1;
+    if (s.pattern && !DAY_PATTERNS[s.pattern]) s.pattern = null;
+    return s;
+  } catch { return null; }
+}
+
 function lsKey() { return `lirr-${vYear}-${vMonth}`; }
 
 function saveToStorage() {
@@ -655,16 +950,22 @@ function copyLink() {
 }
 
 // ─── Calendar ────────────────────────────────────────────────────────────────
+const DAY_FULL_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MODE_LABELS = { 1: 'peak in, off-peak out', 2: 'peak both ways', 3: 'off-peak both ways' };
+
 function renderCalendar() {
   const today = getToday();
   document.getElementById('monthLabel').textContent = `${MONTHS[vMonth]} ${vYear}`;
   const grid = document.getElementById('calGrid');
   grid.innerHTML = '';
+  grid.setAttribute('role', 'grid');
+  grid.setAttribute('aria-label', `${MONTHS[vMonth]} ${vYear}`);
 
   ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach((lbl, i) => {
     const el = document.createElement('div');
     el.className = 'day-hdr' + (i >= 5 ? ' we' : '');
     el.textContent = lbl;
+    el.setAttribute('role', 'columnheader');
     grid.appendChild(el);
   });
 
@@ -674,8 +975,13 @@ function renderCalendar() {
   const isCurMon = vYear === today.getFullYear() && vMonth === today.getMonth();
 
   for (let i = 0; i < blanks; i++) {
-    const b = document.createElement('div'); b.className = 'day blank'; grid.appendChild(b);
+    const b = document.createElement('div');
+    b.className = 'day blank';
+    b.setAttribute('aria-hidden', 'true');
+    grid.appendChild(b);
   }
+
+  const dayEls = [];
 
   for (let d = 1; d <= daysIn; d++) {
     const date    = new Date(vYear, vMonth, d);
@@ -685,8 +991,10 @@ function renderCalendar() {
     const past    = isCurMon && date < today;
     const isToday = date.getTime() === today.getTime();
     const hol     = isHoliday(vYear, vMonth, d);
+    const dayName = DAY_FULL_NAMES[dow];
 
-    const el = document.createElement('div');
+    const el = document.createElement('button');
+    el.type = 'button';
 
     function refreshCell() {
       const m = sel.get(key) || 0;
@@ -699,13 +1007,20 @@ function renderCalendar() {
         m === 3 ? 'offpeak-both': '',
         isToday ? 'today'       : '',
       ].filter(Boolean).join(' ');
+      el.setAttribute('aria-pressed', m ? 'true' : 'false');
+      let label = `${dayName}, ${MONTHS[vMonth]} ${d}`;
+      if (hol) label += `, ${holName(vYear, vMonth, d)}`;
+      if (m) label += `, selected: ${MODE_LABELS[m]}`;
+      el.setAttribute('aria-label', label);
     }
     refreshCell();
     el.textContent = d;
     if (hol) el.title = holName(vYear, vMonth, d);
 
+    el.setAttribute('tabindex', dayEls.length === 0 ? '0' : '-1');
+
     el.addEventListener('click', () => {
-      sel.has(key) ? sel.delete(key) : sel.set(key, 1);
+      sel.has(key) ? sel.delete(key) : sel.set(key, defaultMode);
       refreshCell(); persist();
     });
     el.addEventListener('contextmenu', e => {
@@ -714,6 +1029,28 @@ function renderCalendar() {
       const cur = sel.get(key);
       sel.set(key, cur === 1 ? 2 : cur === 2 ? 3 : 1);
       refreshCell(); persist();
+    });
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (e.shiftKey && sel.has(key) && !we) {
+          const cur = sel.get(key);
+          sel.set(key, cur === 1 ? 2 : cur === 2 ? 3 : 1);
+        } else {
+          sel.has(key) ? sel.delete(key) : sel.set(key, defaultMode);
+        }
+        refreshCell(); persist();
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const idx = dayEls.indexOf(el);
+        const delta = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 7, ArrowUp: -7 }[e.key];
+        const nextIdx = idx + delta;
+        if (nextIdx >= 0 && nextIdx < dayEls.length) {
+          dayEls[idx].setAttribute('tabindex', '-1');
+          dayEls[nextIdx].setAttribute('tabindex', '0');
+          dayEls[nextIdx].focus();
+        }
+      }
     });
     let pt;
     el.addEventListener('touchstart', () => {
@@ -727,6 +1064,7 @@ function renderCalendar() {
     el.addEventListener('touchend',  () => clearTimeout(pt), { passive: true });
     el.addEventListener('touchmove', () => clearTimeout(pt), { passive: true });
 
+    dayEls.push(el);
     grid.appendChild(el);
   }
 }
@@ -734,22 +1072,66 @@ function renderCalendar() {
 function persist() { saveToStorage(); updateURL(); updateCosts(); }
 
 // ─── Auto-select Tue/Wed/Thu (skipping holidays) ─────────────────────────────
-function selectTWT() {
-  const today = getToday();
+// Day patterns: key → set of JS day-of-week numbers (0=Sun, 6=Sat)
+const DAY_PATTERNS = {
+  twt:   new Set([2, 3, 4]),       // Tue, Wed, Thu
+  mwf:   new Set([1, 3, 5]),       // Mon, Wed, Fri
+  mtwtf: new Set([1, 2, 3, 4, 5]), // Mon–Fri
+};
+let activePattern = null;
+
+function selectPattern(patternKey) {
+  if (patternKey === 'clear') {
+    sel.clear();
+    activePattern = null;
+    updatePatternButtons();
+    renderCalendar(); persist();
+    saveSettings();
+    return;
+  }
+  const days = DAY_PATTERNS[patternKey];
+  if (!days) return;
+  activePattern = patternKey;
   sel.clear();
+  const today    = getToday();
   const daysIn   = new Date(vYear, vMonth + 1, 0).getDate();
   const isCurMon = vYear === today.getFullYear() && vMonth === today.getMonth();
   for (let d = 1; d <= daysIn; d++) {
     const date = new Date(vYear, vMonth, d);
-    if (!isTWT(date.getDay())) continue;
+    if (!days.has(date.getDay())) continue;
     if (isCurMon && date < today) continue;
     if (isHoliday(vYear, vMonth, d)) continue;
-    sel.set(dateKey(vYear, vMonth, d), 1);
+    sel.set(dateKey(vYear, vMonth, d), defaultMode);
   }
+  updatePatternButtons();
   renderCalendar(); persist();
+  saveSettings();
 }
 
-function clearAll() { sel.clear(); renderCalendar(); persist(); }
+function updatePatternButtons() {
+  document.querySelectorAll('.cal-actions .chip').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.pattern === activePattern);
+  });
+}
+
+// ─── Default trip mode ──────────────────────────────────────────────────────
+let defaultMode = 1;
+
+function setDefaultMode(mode) {
+  defaultMode = mode;
+  updateModeButtons();
+  saveSettings();
+}
+
+function updateModeButtons() {
+  document.querySelectorAll('[data-mode]').forEach(btn => {
+    btn.classList.toggle('active', +btn.dataset.mode === defaultMode);
+  });
+}
+
+// Backwards compat alias
+function selectTWT() { selectPattern('twt'); }
+function clearAll() { selectPattern('clear'); }
 
 // ─── Month navigation ────────────────────────────────────────────────────────
 function changeMonth(delta) {
@@ -762,9 +1144,6 @@ function changeMonth(delta) {
 }
 
 // ─── Cost calculation ────────────────────────────────────────────────────────
-// All valid day modes: 1=peak-in/off-peak-out, 2=peak-both, 3=off-peak-both
-const VALID_MODES = new Set([1, 2, 3]);
-
 function dayCost(mode, we) {
   if (we)         return fares.offpeakOw * 2;
   if (mode === 2) return fares.peakOw * 2;
@@ -915,10 +1294,16 @@ function updateCosts() {
 
     optDiv.append(row, note);
 
-    if (!isBest) {
+    if (!isBest && delta > 0.005) {
       const deltaDiv = document.createElement('div');
       deltaDiv.className = 'opt-delta';
       deltaDiv.textContent = `+${fmt(delta)} vs best option`;
+      optDiv.append(deltaDiv);
+    } else if (!isBest && delta <= 0.005) {
+      const deltaDiv = document.createElement('div');
+      deltaDiv.className = 'opt-delta';
+      deltaDiv.style.color = 'var(--accent)';
+      deltaDiv.textContent = 'Tied for best value';
       optDiv.append(deltaDiv);
     }
 
@@ -952,22 +1337,130 @@ function updateCosts() {
     return row;
   }
 
+  const bestOpt = allOpts[0];
+  const runnerUp = allOpts.length > 1 ? allOpts[1] : null;
+  const nearTie = runnerUp && (runnerUp.cost - bestOpt.cost) <= 5 && (runnerUp.cost - bestOpt.cost) > 0.005;
+
   if (wdDays === 0) {
     insightBox.append(makeInsightRow('💡', 'Only weekend days — off-peak fares both ways.'));
-  } else if (individual < monthly) {
-    insightBox.append(makeInsightRow('💡', 'Individual saves ', ['strong', fmt(monthly-individual)], ' vs monthly for this selection.'));
+  } else if (bestOpt.id === 'individual') {
+    insightBox.append(makeInsightRow('💡', 'Individual tickets save ', ['strong', fmt(monthly - individual)], ' vs monthly for this selection.'));
     if (toBreak > 0 && toBreak <= 6)
       insightBox.append(makeInsightRow('📅', 'Add ', ['strong', `${toBreak} more weekday${toBreak!==1?'s':''}`], ' and the monthly pass becomes cheapest.'));
-  } else {
-    insightBox.append(makeInsightRow('✅', 'Monthly pass saves ', ['strong', fmt(individual-monthly)], ' vs individual for this selection.'));
+  } else if (bestOpt.id === 'monthly') {
+    insightBox.append(makeInsightRow('✅', 'Monthly pass saves ', ['strong', fmt(individual - monthly)], ' vs individual tickets.'));
+  } else if (bestOpt.id === 'weekly') {
+    insightBox.append(makeInsightRow('✅', `${weeklyLabel} saves `, ['strong', fmt(individual - weeklyCombo)], ' vs individual tickets.'));
+    if (passesUsed > 0)
+      insightBox.append(makeInsightRow('💡', `${passesUsed} week${passesUsed>1?'s':''} with 5+ days get a weekly pass (${fmt(fares.weekly)}); remaining days bought individually.`));
+  } else if (bestOpt.id === 'daypass') {
+    insightBox.append(makeInsightRow('✅', 'Day passes save ', ['strong', fmt(individual - dayPasses)], ' vs individual tickets.'));
+    insightBox.append(makeInsightRow('💡', `Day passes (${fmt(fares.dayPassWd)}/weekday) beat round-trip tickets — useful if you make 3+ trips in a day.`));
+  }
+
+  if (nearTie) {
+    const diff = fmt(runnerUp.cost - bestOpt.cost);
+    const names = { monthly: 'Monthly pass', individual: 'Individual tickets', weekly: weeklyLabel, daypass: 'Day passes' };
+    insightBox.append(makeInsightRow('🤏', `${names[runnerUp.id]} is only `, ['strong', diff], ' more — consider convenience.'));
+  }
+
+  // CityTicket awareness
+  const fromSt = findStation(document.getElementById('fromStation')?.value || '');
+  const toSt   = findStation(document.getElementById('toStation')?.value || '');
+  if (weDays > 0 && fromSt && toSt && isCityTicketEligible(fromSt, toSt)) {
+    insightBox.append(makeInsightRow('🎫',
+      'Weekend rides between City Zone stations qualify for ', ['strong', 'CityTicket'],
+      ` (${fmt(7.25)} peak / ${fmt(5.25)} off-peak one-way) — buy at the station or via the MTA app.`));
   }
 
   insightBox.append(
     makeInsightRow('📊', 'Monthly breakeven: ', ['strong', `${breakeven} weekday trips`], ` (${fmt(fares.monthly)} ÷ ${fmt(avgTripCost)}/day).`),
-    makeInsightRow('📱', 'Buy via ', ['strong', 'TrainTime app'], ' to avoid the $6.50 on-board surcharge. PAYG: 11th trip free after 10 in 14 days — only kicks in at ~5 days/week.')
+    makeInsightRow('📱', 'Buy via ', ['strong', 'TrainTime app'], ' to avoid the $6.50 on-board surcharge.')
   );
 
   panel.append(tally, tallySub, divider, options, insightBox);
+  updateProjection();
+}
+
+// ─── Multi-month projection ────────────────────────────────────────────────
+function projectMonth(y, m, pattern, mode) {
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const days = DAY_PATTERNS[pattern];
+  if (!days) return null;
+  let wdDays = 0, weDays = 0, indTotal = 0, dpTotal = 0;
+  const weekMap = {};
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(y, m, d);
+    if (!days.has(date.getDay())) continue;
+    if (isHoliday(y, m, d)) continue;
+    const we = isWeekend(date.getDay());
+    we ? weDays++ : wdDays++;
+    indTotal += dayCost(mode, we);
+    dpTotal  += we ? fares.dayPassWe : fares.dayPassWd;
+    const dow = date.getDay();
+    const mon = new Date(date);
+    mon.setDate(mon.getDate() - (dow + 6) % 7);
+    const wk = `${mon.getFullYear()}|${mon.getMonth()}|${mon.getDate()}`;
+    if (!weekMap[wk]) weekMap[wk] = { cost: 0, count: 0 };
+    weekMap[wk].cost += dayCost(mode, we);
+    weekMap[wk].count++;
+  }
+  let weeklyCombo = 0;
+  Object.values(weekMap).forEach(({ cost, count }) => {
+    weeklyCombo += (count >= 5 && fares.weekly < cost) ? fares.weekly : cost;
+  });
+  const total = wdDays + weDays;
+  if (!total) return null;
+  const opts = [
+    { id: 'monthly',    name: 'Monthly',    cost: fares.monthly },
+    { id: 'individual', name: 'Individual', cost: indTotal },
+    { id: 'daypass',    name: 'Day Passes', cost: dpTotal },
+    { id: 'weekly',     name: 'Weekly Mix', cost: weeklyCombo },
+  ];
+  opts.sort((a, b) => a.cost - b.cost);
+  return { total, wdDays, weDays, best: opts[0] };
+}
+
+function updateProjection() {
+  const card = document.getElementById('projectionCard');
+  const content = document.getElementById('projectionContent');
+  if (!activePattern) { card.style.display = 'none'; return; }
+  card.style.display = '';
+  content.textContent = '';
+  for (let offset = 0; offset < 3; offset++) {
+    let py = vYear, pm = vMonth + offset;
+    if (pm > 11) { pm -= 12; py++; }
+    const proj = projectMonth(py, pm, activePattern, defaultMode);
+    if (!proj) continue;
+    const row = document.createElement('div');
+    row.className = 'proj-row' + (offset === 0 ? ' proj-current' : '');
+    row.addEventListener('click', () => {
+      vYear = py; vMonth = pm;
+      sel.clear();
+      if (!loadFromStorage()) selectPattern(activePattern);
+      else { renderCalendar(); updateURL(); updateCosts(); updatePatternButtons(); }
+      document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+    });
+    const left = document.createElement('div');
+    const monthName = document.createElement('div');
+    monthName.className = 'proj-month';
+    monthName.textContent = `${MONTHS[pm]} ${py}`;
+    const dayInfo = document.createElement('div');
+    dayInfo.className = 'proj-days';
+    dayInfo.textContent = `${proj.total} days (${proj.wdDays} weekday${proj.weDays ? `, ${proj.weDays} weekend` : ''})`;
+    left.append(monthName, dayInfo);
+    const right = document.createElement('div');
+    right.className = 'proj-right';
+    const cost = document.createElement('div');
+    cost.className = 'proj-cost';
+    cost.textContent = fmt(proj.best.cost);
+    const bestLabel = document.createElement('div');
+    bestLabel.className = 'proj-best';
+    bestLabel.textContent = proj.best.name;
+    right.append(cost, bestLabel);
+    row.append(left, right);
+    content.append(row);
+  }
 }
 
 // ─── Fare editor ─────────────────────────────────────────────────────────────
@@ -984,7 +1477,9 @@ function initFareEditor() {
   });
   document.getElementById('fareToggleBtn').addEventListener('click', () => {
     const ed = document.getElementById('fareEditor'), btn = document.getElementById('fareToggleBtn');
-    btn.textContent = ed.classList.toggle('open') ? '✕ Close fare editor' : '⚙ Edit fare prices';
+    const open = ed.classList.toggle('open');
+    btn.textContent = open ? '✕ Close fare editor' : '⚙ Edit fare prices';
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
   });
   updatePerDayLabel();
 }
@@ -993,13 +1488,118 @@ function updatePerDayLabel() {
   document.getElementById('perDayLabel').textContent = (fares.peakOw+fares.offpeakOw).toFixed(2);
 }
 
+// ─── Station selector ────────────────────────────────────────────────────────
+function initStationSelector(savedFrom, savedTo) {
+  const fromSel = document.getElementById('fromStation');
+  const toSel   = document.getElementById('toStation');
+
+  // Build optgroups by branch
+  function populateSelect(sel, defaultStation) {
+    sel.innerHTML = '';
+    for (const [branch, stations] of Object.entries(LIRR_BRANCHES)) {
+      const group = document.createElement('optgroup');
+      group.label = branch;
+      for (const s of stations) {
+        const opt = document.createElement('option');
+        opt.value = s.name;
+        opt.textContent = `${s.name} (Zone ${s.zone})`;
+        if (s.name === defaultStation) opt.selected = true;
+        group.append(opt);
+      }
+      sel.append(group);
+    }
+  }
+
+  populateSelect(fromSel, savedFrom || 'Hicksville');
+  populateSelect(toSel, savedTo || 'Penn Station');
+
+  function onStationChange() {
+    const from = findStation(fromSel.value);
+    const to   = findStation(toSel.value);
+    if (!from || !to) return;
+
+    // Update zone tags
+    document.getElementById('fromZoneTag').textContent = `Zone ${from.zone} · ${from.branch}`;
+    document.getElementById('toZoneTag').textContent   = `Zone ${to.zone} · ${to.branch}`;
+
+    // Update header subtitle
+    document.getElementById('headerSub').textContent =
+      `${from.name} \u2192 ${to.name}  \u00b7  Zone ${from.zone} \u2192 ${to.zone}`;
+
+    // Determine which zone to look up fares for.
+    // Current fare table covers Zone 1 <-> other zone.
+    let fareZone = null;
+    if (from.zone === 1) fareZone = to.zone;
+    else if (to.zone === 1) fareZone = from.zone;
+    else {
+      // Inter-zone trip not involving Zone 1
+      document.getElementById('fromZoneTag').textContent += ' (inter-zone fares: use fare editor)';
+      return;
+    }
+
+    const zoneFares = getFaresForZone(fareZone);
+    if (!zoneFares) return;
+
+    // Apply fares
+    fares.monthly   = zoneFares.monthly;
+    fares.weekly    = zoneFares.weekly;
+    fares.peakOw    = zoneFares.peakOw;
+    fares.offpeakOw = zoneFares.offpeakOw;
+    fares.dayPassWd = zoneFares.dayPassWd;
+    fares.dayPassWe = zoneFares.dayPassWe;
+
+    // Sync fare editor inputs
+    document.getElementById('f-monthly').value = fares.monthly;
+    document.getElementById('f-weekly').value  = fares.weekly;
+    document.getElementById('f-peak').value    = fares.peakOw;
+    document.getElementById('f-offpeak').value = fares.offpeakOw;
+    document.getElementById('f-dp-wd').value   = fares.dayPassWd;
+    document.getElementById('f-dp-we').value   = fares.dayPassWe;
+
+    updatePerDayLabel();
+    updateCosts();
+    saveSettings();
+  }
+
+  fromSel.addEventListener('change', onStationChange);
+  toSel.addEventListener('change', onStationChange);
+
+  // Swap button
+  document.getElementById('swapBtn').addEventListener('click', () => {
+    const tmp = fromSel.value;
+    fromSel.value = toSel.value;
+    toSel.value = tmp;
+    onStationChange();
+  });
+
+  // Initial load
+  onStationChange();
+}
+
 // ─── Bootstrap ───────────────────────────────────────────────────────────────
+// Priority: URL hash > localStorage > ?preset= > generic defaults
+const preset = getPreset();
+const savedSettings = loadSettings();
+// Merge: localStorage wins over preset, preset wins over defaults
+const boot = {
+  from:    savedSettings?.from    || preset?.from    || 'Hicksville',
+  to:      savedSettings?.to      || preset?.to      || 'Penn Station',
+  mode:    savedSettings?.mode    || preset?.mode    || 1,
+  pattern: savedSettings?.pattern ?? preset?.pattern ?? null,
+};
+defaultMode = boot.mode;
+activePattern = boot.pattern;
+initStationSelector(boot.from, boot.to);
 if (!loadFromURL()) {
   initView();
-  if (!loadFromStorage()) selectTWT();
-  else { renderCalendar(); updateURL(); updateCosts(); }
+  if (!loadFromStorage()) {
+    if (activePattern) selectPattern(activePattern);
+    else if (preset) selectPattern(preset.pattern || 'twt');
+    else selectTWT();
+  }
+  else { renderCalendar(); updateURL(); updateCosts(); updatePatternButtons(); }
 } else {
-  renderCalendar(); updateURL(); updateCosts();
+  renderCalendar(); updateURL(); updateCosts(); updatePatternButtons();
 }
 initFareEditor();
 
@@ -1012,8 +1612,13 @@ initFareEditor();
 
 document.getElementById('prevBtn').addEventListener('click', () => changeMonth(-1));
 document.getElementById('nextBtn').addEventListener('click', () => changeMonth(1));
-document.getElementById('twtBtn').addEventListener('click', selectTWT);
-document.getElementById('clearBtn').addEventListener('click', clearAll);
+document.querySelectorAll('[data-pattern]').forEach(btn => {
+  btn.addEventListener('click', () => selectPattern(btn.dataset.pattern));
+});
+document.querySelectorAll('[data-mode]').forEach(btn => {
+  btn.addEventListener('click', () => setDefaultMode(+btn.dataset.mode));
+});
+updateModeButtons();
 document.getElementById('copyLinkBtn').addEventListener('click', copyLink);
 
 if ('serviceWorker' in navigator) {
