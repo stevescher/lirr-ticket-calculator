@@ -1,4 +1,4 @@
-const CACHE = 'lirr-calc-v8';
+const CACHE = 'lirr-calc-v9';
 const ASSETS = ['/', '/index.html', '/app.js', '/lirr-data.js', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/icon-maskable-192.png', '/icons/icon-maskable-512.png', '/icons/icon-192.svg', '/icons/icon-512.svg', '/icons/favicon.svg', '/privacy.html', '/terms.html', '/404.html', '/og-image.svg'];
 
 self.addEventListener('install', e => {

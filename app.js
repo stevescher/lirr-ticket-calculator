@@ -941,6 +941,19 @@ document.querySelectorAll('[data-mode]').forEach(btn => {
 updateModeButtons();
 document.getElementById('copyLinkBtn').addEventListener('click', copyLink);
 
+// ─── Fare metadata display ───────────────────────────────────────────────────
+(function renderFareMetadata() {
+  if (typeof FARE_METADATA === 'undefined') return;
+  const fmt = (iso, opts) => {
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', { ...opts, timeZone: 'UTC' });
+  };
+  const eff = document.getElementById('fareEffectiveDate');
+  if (eff) eff.textContent = fmt(FARE_METADATA.effective, { year: 'numeric', month: 'long', day: 'numeric' });
+  const lv = document.getElementById('footerLastVerified');
+  if (lv) lv.textContent = fmt(FARE_METADATA.lastVerified, { year: 'numeric', month: 'short', day: 'numeric' });
+})();
+
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js');
 }
