@@ -143,6 +143,7 @@
       max-width: 1060px;
       margin: 1.25rem auto;
       padding: 0 1.25rem;
+      align-items: start;
     }
 
     .card {
@@ -203,6 +204,7 @@
       color: var(--text-3);
       margin-bottom: .25rem;
     }
+    .cal-actions-label-spaced { margin-top: .75rem; }
     .cal-actions-label-with-help {
       display: flex;
       align-items: center;
@@ -353,9 +355,11 @@
     /* Legend */
     .cal-legend {
       display: flex;
-      gap: 1rem;
+      flex-wrap: wrap;
+      gap: .5rem 1rem;
       margin-top: .75rem;
       padding-top: .75rem;
+      padding-bottom: .25rem;
       border-top: 1px solid var(--border);
       font-size: .75rem;
       color: var(--text-3);
@@ -369,7 +373,10 @@
     .legend-dot.blue   { background: var(--primary); }
     .legend-dot.amber  { background: #d97706; }
     .legend-dot.green  { background: #059669; }
-    .legend-dot.empty  { background: #94a3b8; }
+    .chip .legend-dot  { display: inline-block; vertical-align: middle; margin-right: .25rem; }
+    .legend-hint { font-size: .7rem; color: var(--text-3); margin-top: .375rem; }
+
+    .left-col { display: flex; flex-direction: column; gap: 1.25rem; }
 
     /* ── Cost panel ── */
     .panel-title {
@@ -771,6 +778,8 @@
 
 <main class="layout">
 
+  <div class="left-col">
+
   <!-- Calendar -->
   <div class="card">
     <div class="cal-nav">
@@ -785,7 +794,7 @@
       <button class="chip" data-pattern="mtwtf">Mon-Fri</button>
       <button class="chip" data-pattern="clear"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Clear</button>
     </div>
-    <div class="cal-actions-label cal-actions-label-with-help" style="margin-top:.75rem">
+    <div class="cal-actions-label cal-actions-label-with-help cal-actions-label-spaced">
       <span>Trip mode</span>
       <span class="help-tip" tabindex="0" aria-label="What is peak vs off-peak?">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -797,23 +806,17 @@
       <span class="cal-actions-hint">Applies to new selections</span>
     </div>
     <div class="cal-actions">
-      <button class="chip" data-mode="1"><span class="legend-dot blue" style="display:inline-block;vertical-align:middle;margin-right:.25rem"></span>Peak in / Off-peak out</button>
-      <button class="chip" data-mode="2"><span class="legend-dot amber" style="display:inline-block;vertical-align:middle;margin-right:.25rem"></span>Peak both</button>
-      <button class="chip" data-mode="3"><span class="legend-dot green" style="display:inline-block;vertical-align:middle;margin-right:.25rem"></span>Off-peak both</button>
+      <button class="chip" data-mode="1"><span class="legend-dot blue"></span>Peak in / Off-peak out</button>
+      <button class="chip" data-mode="2"><span class="legend-dot amber"></span>Peak both</button>
+      <button class="chip" data-mode="3"><span class="legend-dot green"></span>Off-peak both</button>
     </div>
     <div class="cal-grid" id="calGrid"></div>
     <div class="cal-legend">
-      <div class="legend-item"><div class="legend-dot empty"></div>Not going in</div>
       <div class="legend-item"><div class="legend-dot blue"></div>Peak in, off-peak out</div>
       <div class="legend-item" id="peakBothLegend"><div class="legend-dot amber"></div>Peak in, peak out</div>
       <div class="legend-item" id="offpeakBothLegend"><div class="legend-dot green"></div>Off-peak both ways</div>
     </div>
-  </div>
-
-  <!-- Cost panel -->
-  <div class="card">
-    <div class="panel-title">Cost Comparison</div>
-    <div id="panelContent" aria-live="polite" aria-atomic="false"></div>
+    <div class="legend-hint" id="legendHint"></div>
   </div>
 
   <!-- Multi-month projection -->
@@ -821,6 +824,14 @@
     <div class="panel-title">3-Month Projection</div>
     <div class="projection-sub">Based on your commute pattern · click a month to edit</div>
     <div id="projectionContent"></div>
+  </div>
+
+  </div><!-- /.left-col -->
+
+  <!-- Cost panel -->
+  <div class="card">
+    <div class="panel-title">Cost Comparison</div>
+    <div id="panelContent" aria-live="polite" aria-atomic="false"></div>
   </div>
 
 </main>

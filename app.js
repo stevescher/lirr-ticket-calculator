@@ -915,8 +915,9 @@ initFareEditor();
 (function() {
   const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   const gesture = isTouch ? 'long-press' : 'right-click';
-  document.getElementById('peakBothLegend').lastChild.textContent    = `Peak in, peak out (${gesture} to cycle)`;
-  document.getElementById('offpeakBothLegend').lastChild.textContent = `Off-peak both ways (${gesture} to cycle)`;
+  document.getElementById('peakBothLegend').lastChild.textContent    = `Peak in, peak out`;
+  document.getElementById('offpeakBothLegend').lastChild.textContent = `Off-peak both ways`;
+  document.getElementById('legendHint').textContent = `${gesture.charAt(0).toUpperCase() + gesture.slice(1)} a colored day to cycle through trip modes`;
 })();
 
 document.getElementById('prevBtn').addEventListener('click', () => changeMonth(-1));
