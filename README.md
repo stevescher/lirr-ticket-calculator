@@ -1,91 +1,93 @@
 # LIRR Ticket Calculator
 
-A personal commute cost calculator for deciding whether a monthly LIRR pass or individual tickets is the better deal in a given month.
+Compare the cost of a monthly LIRR pass vs. individual tickets, day passes, and weekly passes for any station pair and commute pattern.
 
 **Live:** https://lirr-ticket-calculator.vercel.app
 
 ---
 
-## ⚠️ Built for a specific use case
-
-This tool is **not a general-purpose LIRR calculator**. It was built around one commuter's exact conditions. All fare logic, defaults, and comparisons are hardcoded to those conditions. See below.
-
----
-
-## Hardcoded conditions
-
-| Parameter | Value |
-|---|---|
-| Origin | Hicksville |
-| Destination | Penn Station (New York) |
-| Fare zone | Zone 7 |
-| Default commute days | Tuesday, Wednesday, Thursday |
-| Inbound fare type | **Peak** (arrives NYC 6–10am) |
-| Outbound fare type | **Off-peak** (departs NYC after 8pm) |
-| Per-day default cost | $26.50 (peak in + off-peak out) |
-
-### Fare prices (effective January 4, 2026)
-
-| Ticket type | Price |
-|---|---|
-| Monthly pass | $299.75 |
-| Weekly pass | $106.50 |
-| Peak one-way | $15.25 |
-| Off-peak one-way | $11.25 |
-| Weekday Day Pass | $27.50 |
-| Weekend Day Pass | $22.50 |
-| On-board surcharge | +$6.50 |
-
-Fares are editable in the app via the "Edit fare prices" section at the bottom of the page, in case the MTA updates them.
-
-Fare accuracy is maintained by a local scheduled task (`lirr-fare-check`) that runs on the 1st of each month. It reads `lirr-data.js`, checks each zone's fares against MTA's published schedule, and either updates the `lastVerified` date (if unchanged) or opens a Linear issue listing the discrepancies (if fares have changed). The `FARE_METADATA.lastVerified` field in `lirr-data.js` reflects when fares were last confirmed correct.
-
----
-
 ## What it does
 
-1. Displays a monthly calendar defaulting to the current or upcoming month
-2. Pre-selects all Tuesdays, Wednesdays, and Thursdays (skipping federal holidays)
-3. Lets you click any day to toggle it on or off
-4. Calculates the total cost of four options for the selected days:
-   - Monthly pass
-   - Individual one-way tickets (peak in + off-peak out)
-   - Day passes
-   - Optimal weekly pass combination + individual for remaining days
-5. Ranks all options cheapest to most expensive and highlights the best value
-6. Shows how far the current selection is from the monthly breakeven point (12 weekday trips)
+Select your origin and destination stations, pick your commute days, and the app calculates and ranks four ticket options for the month:
 
-### Breakeven
-Monthly becomes cheaper than individual one-ways at **12 or more weekday trips** in a month ($299.75 ÷ $26.50/day).
+1. **Individual tickets** — peak and/or off-peak one-ways per your trip mode
+2. **Weekly pass + individual** — optimal number of weekly passes plus individual tickets for remaining days
+3. **Day passes** — weekday or weekend day passes per commute day
+4. **Monthly pass** — unlimited rides for the calendar month
+
+The cheapest option is highlighted. The app also shows how many more weekday trips it would take to flip the result, the monthly breakeven point, and a **3-month projection** based on your current commute pattern.
+
+---
+
+## Fare coverage
+
+Supports all LIRR zone pairs across the full MTA fare matrix:
+
+- Zones 1, 3, 4, 7, 9, 10, 12, 14
+- All 36 zone pair combinations
+- Source: MTA document 194866, effective January 4, 2026
+
+Fares are editable in the app via **Edit fare prices** at the bottom of the page. The `FARE_METADATA.lastVerified` field in `lirr-data.js` reflects when fares were last cross-checked against the MTA's published schedule.
+
+### Automated fare verification
+
+A local scheduled task (`lirr-fare-check`) runs on the 1st of each month. It reads `lirr-data.js`, checks each zone's fares against MTA's published schedule, and either updates `lastVerified` (if unchanged) or opens a Linear issue listing discrepancies (if fares have changed).
 
 ---
 
 ## Features
 
-- **Holiday exclusion** — federal holidays are automatically skipped during T/W/T pre-selection and marked with a red dot on the calendar (hover for the holiday name)
-- **Peak-out override** — right-click (or long-press on mobile) a selected weekday to mark it as peak both ways ($30.50 instead of $26.50). Right-click again to revert
-- **Persistence** — selections are saved per month in `localStorage`, so closing and reopening the tab restores your work
-- **Shareable links** — the URL hash updates on every change; the "Copy Link" button in the header copies a link that restores the exact month and day selections
-- **PWA / installable** — add to your home screen for a native app feel; works fully offline via service worker
-- **Security hardened** — HTTP security headers (CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy) set via `vercel.json`
-
----
-
-## Future plans
-
-A public version of this tool is planned that will support any LIRR zone, route, and commute pattern — not just this specific setup. Planned additions include configurable commute days, per-day fare type defaults, a full station/zone selector, and an off-peak both-ways mode. This repo serves as the foundation for that work.
+- **Station selector** — choose any origin and destination; fares are looked up by zone pair automatically
+- **Commute pattern presets** — one-click presets for Tue–Thu, Mon/Wed/Fri, and Mon–Fri
+- **Three trip modes** — Peak in / Off-peak out, Peak both ways, Off-peak both ways; set a default and right-click (or long-press on mobile) any selected day to cycle through modes
+- **Holiday exclusion** — federal holidays are automatically skipped in presets and marked with a red dot on the calendar
+- **3-month projection** — estimates costs for the current and next two months based on your commute pattern; click any month to jump to it
+- **Insights** — contextual callouts explaining the result, breakeven math, and whether buying via the TrainTime app avoids the on-board surcharge
+- **Persistence** — selections are saved per month in `localStorage`
+- **Shareable links** — the URL hash updates on every change; Copy Link in the header restores the exact month, stations, and day selections
+- **PWA / installable** — add to home screen for a native app feel; works fully offline via service worker
+- **Security hardened** — CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, and Permissions-Policy headers set via `vercel.json`
+- **Accessible** — passes axe-core WCAG checks with zero exclusions
 
 ---
 
 ## Running the app
 
-**Online (no setup):** https://lirr-ticket-calculator.vercel.app
+**Online:** https://lirr-ticket-calculator.vercel.app
 
-**Offline / locally:** No build step required. Open `index.html` directly in a browser, or serve it with:
+**Locally:** No build step required.
 
 ```bash
 python3 -m http.server 8080
-# then open http://localhost:8080
+# open http://localhost:8080
 ```
 
-Both options are fully functional. The app has no server-side dependencies — everything runs in the browser.
+The service worker skips caching on localhost so changes are always reflected immediately on hard refresh (`Cmd+Shift+R`).
+
+---
+
+## Tests
+
+```bash
+npm test           # Vitest unit tests (fare logic, date helpers, cost calculations)
+npm run test:e2e   # Playwright E2E tests (calendar, UI, PWA, accessibility)
+npm run test:a11y  # axe-core accessibility checks only
+```
+
+Unit tests live in `src/__tests__/`. E2E tests live in `e2e/`.
+
+---
+
+## Project structure
+
+```
+index.html       # App shell, all CSS
+app.js           # UI logic, calendar rendering, cost calculations
+lirr-data.js     # Fare table, station list, zone mappings, fare metadata
+sw.js            # Service worker (cache-first in production, bypass on localhost)
+src/
+  calc.js        # Pure calculation functions (extracted for unit testing)
+  __tests__/     # Vitest unit tests
+e2e/             # Playwright E2E and accessibility tests
+vercel.json      # Deployment config and security headers
+```
