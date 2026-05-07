@@ -8,8 +8,7 @@
  *
  * LIRR uses 8 fare zones: 1, 3, 4, 7, 9, 10, 12, 14
  * Fares are determined by zone pair (origin zone + destination zone).
- * This file covers all Zone 1 (City Terminal) to/from other zone fares,
- * which handles the vast majority of commuters (Penn Station / Grand Central).
+ * This file covers all zone pair combinations (the full MTA fare matrix).
  *
  * Day Pass: valid from purchase until 4am next day.
  *   - Weekday: 10% less than two peak one-way tickets
@@ -31,18 +30,47 @@ const FARE_METADATA = {
   lastVerified: '2026-05-02',  // YYYY-MM-DD — when fares were last cross-checked vs MTA
 };
 
-// ─── Fare Table (Zone 1 ↔ destination zone) ────────────────────────────────
-// Each key is the non-Zone-1 zone number.
-// All fares are in USD.
+// ─── Fare Table (all zone pairs) ────────────────────────────────────────────
+// Keys are "lowerZone,higherZone". Matrix is symmetric — always normalize.
+// All fares in USD. Source: MTA document 194866, effective January 4, 2026.
+// For trips where both zones are 4–14, peak and off-peak one-way are the same.
 const ZONE_FARES = {
-  1:  { monthly: 172.50, weekly:  67.75, peakOw:  7.25, offpeakOw:  5.25, dayPassWd: 14.50, dayPassWe: 10.50 },
-  3:  { monthly: 207.00, weekly:  81.50, peakOw:  7.25, offpeakOw:  5.25, dayPassWd: 14.50, dayPassWe: 10.50 },
-  4:  { monthly: 264.25, weekly:  94.00, peakOw: 13.50, offpeakOw: 10.00, dayPassWd: 24.25, dayPassWe: 20.00 },
-  7:  { monthly: 299.75, weekly: 106.50, peakOw: 15.25, offpeakOw: 11.25, dayPassWd: 27.50, dayPassWe: 22.50 },
-  9:  { monthly: 356.50, weekly: 126.75, peakOw: 18.25, offpeakOw: 13.50, dayPassWd: 32.75, dayPassWe: 27.00 },
-  10: { monthly: 394.50, weekly: 140.25, peakOw: 21.50, offpeakOw: 16.00, dayPassWd: 38.75, dayPassWe: 32.00 },
-  12: { monthly: 452.00, weekly: 160.75, peakOw: 25.50, offpeakOw: 18.75, dayPassWd: 46.00, dayPassWe: 37.50 },
-  14: { monthly: 487.75, weekly: 173.50, peakOw: 33.00, offpeakOw: 24.50, dayPassWd: 59.50, dayPassWe: 49.00 },
+  '1,1':   { monthly: 172.50, weekly:  67.75, peakOw:  7.25, offpeakOw:  5.25, dayPassWd: 14.50, dayPassWe: 10.50 },
+  '1,3':   { monthly: 207.00, weekly:  81.50, peakOw:  7.25, offpeakOw:  5.25, dayPassWd: 14.50, dayPassWe: 10.50 },
+  '1,4':   { monthly: 264.25, weekly:  94.00, peakOw: 13.50, offpeakOw: 10.00, dayPassWd: 24.25, dayPassWe: 20.00 },
+  '1,7':   { monthly: 299.75, weekly: 106.50, peakOw: 15.25, offpeakOw: 11.25, dayPassWd: 27.50, dayPassWe: 22.50 },
+  '1,9':   { monthly: 356.50, weekly: 126.75, peakOw: 18.25, offpeakOw: 13.50, dayPassWd: 32.75, dayPassWe: 27.00 },
+  '1,10':  { monthly: 394.50, weekly: 140.25, peakOw: 21.50, offpeakOw: 16.00, dayPassWd: 38.75, dayPassWe: 32.00 },
+  '1,12':  { monthly: 452.00, weekly: 160.75, peakOw: 25.50, offpeakOw: 18.75, dayPassWd: 46.00, dayPassWe: 37.50 },
+  '1,14':  { monthly: 487.75, weekly: 173.50, peakOw: 33.00, offpeakOw: 24.50, dayPassWd: 59.50, dayPassWe: 49.00 },
+  '3,3':   { monthly: 130.50, weekly:  49.50, peakOw:  6.00, offpeakOw:  4.50, dayPassWd: 10.75, dayPassWe:  9.00 },
+  '3,4':   { monthly: 197.25, weekly:  67.75, peakOw:  9.00, offpeakOw:  6.75, dayPassWd: 16.25, dayPassWe: 13.50 },
+  '3,7':   { monthly: 230.75, weekly:  79.50, peakOw: 10.75, offpeakOw:  8.00, dayPassWd: 19.25, dayPassWe: 16.00 },
+  '3,9':   { monthly: 277.75, weekly:  95.50, peakOw: 13.25, offpeakOw:  9.75, dayPassWd: 23.75, dayPassWe: 19.50 },
+  '3,10':  { monthly: 327.75, weekly: 112.75, peakOw: 16.50, offpeakOw: 12.25, dayPassWd: 29.75, dayPassWe: 24.50 },
+  '3,12':  { monthly: 394.50, weekly: 135.75, peakOw: 22.00, offpeakOw: 16.25, dayPassWd: 39.50, dayPassWe: 32.50 },
+  '3,14':  { monthly: 434.25, weekly: 149.50, peakOw: 28.25, offpeakOw: 21.00, dayPassWd: 50.75, dayPassWe: 42.00 },
+  '4,4':   { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75 },
+  '4,7':   { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75 },
+  '4,9':   { monthly: 162.00, weekly:  55.75, peakOw:  6.50, offpeakOw:  6.50, dayPassWd: 11.75, dayPassWe: 11.75 },
+  '4,10':  { monthly: 218.25, weekly:  75.00, peakOw:  8.25, offpeakOw:  8.25, dayPassWd: 14.75, dayPassWe: 14.75 },
+  '4,12':  { monthly: 278.75, weekly:  96.00, peakOw: 12.25, offpeakOw: 12.25, dayPassWd: 22.00, dayPassWe: 22.00 },
+  '4,14':  { monthly: 338.25, weekly: 116.25, peakOw: 19.50, offpeakOw: 19.50, dayPassWd: 35.00, dayPassWe: 35.00 },
+  '7,7':   { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75 },
+  '7,9':   { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75 },
+  '7,10':  { monthly: 162.00, weekly:  55.75, peakOw:  6.50, offpeakOw:  6.50, dayPassWd: 11.75, dayPassWe: 11.75 },
+  '7,12':  { monthly: 241.50, weekly:  83.00, peakOw: 10.75, offpeakOw: 10.75, dayPassWd: 19.25, dayPassWe: 19.25 },
+  '7,14':  { monthly: 302.50, weekly: 104.00, peakOw: 18.00, offpeakOw: 18.00, dayPassWd: 32.50, dayPassWe: 32.50 },
+  '9,9':   { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75 },
+  '9,10':  { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75 },
+  '9,12':  { monthly: 208.00, weekly:  71.50, peakOw:  8.25, offpeakOw:  8.25, dayPassWd: 14.75, dayPassWe: 14.75 },
+  '9,14':  { monthly: 267.50, weekly:  92.00, peakOw: 14.75, offpeakOw: 14.75, dayPassWd: 26.50, dayPassWe: 26.50 },
+  '10,10': { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75 },
+  '10,12': { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75 },
+  '10,14': { monthly: 207.75, weekly:  71.50, peakOw: 10.50, offpeakOw: 10.50, dayPassWd: 19.00, dayPassWe: 19.00 },
+  '12,12': { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75 },
+  '12,14': { monthly: 170.25, weekly:  58.50, peakOw:  7.25, offpeakOw:  7.25, dayPassWd: 13.00, dayPassWe: 13.00 },
+  '14,14': { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75 },
 };
 
 // ─── Stations by Branch ─────────────────────────────────────────────────────
@@ -220,9 +248,10 @@ const CITY_ZONE_STATIONS = LIRR_BRANCHES['City Terminal Zone'].map(s => s.name);
 
 // ─── Lookup helpers ─────────────────────────────────────────────────────────
 
-/** Get fares for a zone pair involving Zone 1. Returns fare object or null. */
-function getFaresForZone(zone) {
-  return ZONE_FARES[zone] || null;
+/** Get fares for any zone pair. Returns fare object or null. */
+function getFaresForZonePair(zoneA, zoneB) {
+  const key = [zoneA, zoneB].sort((a, b) => a - b).join(',');
+  return ZONE_FARES[key] || null;
 }
 
 /** Find a station by name (case-insensitive, checks aliases). */

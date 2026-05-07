@@ -846,18 +846,7 @@ function initStationSelector(savedFrom, savedTo) {
     document.getElementById('headerSub').textContent =
       `${from.name} \u2192 ${to.name}  \u00b7  Zone ${from.zone} \u2192 ${to.zone}`;
 
-    // Determine which zone to look up fares for.
-    // Current fare table covers Zone 1 <-> other zone.
-    let fareZone = null;
-    if (from.zone === 1) fareZone = to.zone;
-    else if (to.zone === 1) fareZone = from.zone;
-    else {
-      // Inter-zone trip not involving Zone 1
-      document.getElementById('fromZoneTag').textContent += ' (inter-zone fares: use fare editor)';
-      return;
-    }
-
-    const zoneFares = getFaresForZone(fareZone);
+    const zoneFares = getFaresForZonePair(from.zone, to.zone);
     if (!zoneFares) return;
 
     // Apply fares

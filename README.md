@@ -32,11 +32,13 @@ This tool is **not a general-purpose LIRR calculator**. It was built around one 
 | Weekly pass | $106.50 |
 | Peak one-way | $15.25 |
 | Off-peak one-way | $11.25 |
-| Weekday Day Pass | $27.45 |
+| Weekday Day Pass | $27.50 |
 | Weekend Day Pass | $22.50 |
 | On-board surcharge | +$6.50 |
 
 Fares are editable in the app via the "Edit fare prices" section at the bottom of the page, in case the MTA updates them.
+
+Fare accuracy is maintained by a local scheduled task (`lirr-fare-check`) that runs on the 1st of each month. It reads `lirr-data.js`, checks each zone's fares against MTA's published schedule, and either updates the `lastVerified` date (if unchanged) or opens a Linear issue listing the discrepancies (if fares have changed). The `FARE_METADATA.lastVerified` field in `lirr-data.js` reflects when fares were last confirmed correct.
 
 ---
 

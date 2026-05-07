@@ -37,62 +37,79 @@ const INLINE_FARES = extractDefaultFares();
 // ─── ZONE_FARES structure ────────────────────────────────────────────────────
 
 describe('ZONE_FARES structure', () => {
-  const EXPECTED_ZONES = [1, 3, 4, 7, 9, 10, 12, 14];
+  const ZONES = [1, 3, 4, 7, 9, 10, 12, 14];
   const REQUIRED_KEYS = ['monthly', 'weekly', 'peakOw', 'offpeakOw', 'dayPassWd', 'dayPassWe'];
 
-  it('contains all 8 LIRR fare zones', () => {
-    const zones = Object.keys(ZONE_FARES).map(Number).sort((a, b) => a - b);
-    expect(zones).toEqual(EXPECTED_ZONES);
+  // 8 zones → 8 same-zone + 28 cross-zone pairs = 36 total
+  it('contains all 36 zone pair entries', () => {
+    expect(Object.keys(ZONE_FARES).length).toBe(36);
   });
 
-  EXPECTED_ZONES.forEach(zone => {
-    describe(`Zone ${zone}`, () => {
-      it('has all required fare fields', () => {
-        REQUIRED_KEYS.forEach(key => {
-          expect(ZONE_FARES[zone]).toHaveProperty(key);
-        });
-      });
-
-      it('all fares are positive numbers', () => {
-        REQUIRED_KEYS.forEach(key => {
-          expect(typeof ZONE_FARES[zone][key]).toBe('number');
-          expect(ZONE_FARES[zone][key]).toBeGreaterThan(0);
-        });
-      });
-
-      it('peak > off-peak for one-way fares', () => {
-        expect(ZONE_FARES[zone].peakOw).toBeGreaterThanOrEqual(ZONE_FARES[zone].offpeakOw);
-      });
-
-      it('monthly > weekly (monthly covers more rides)', () => {
-        expect(ZONE_FARES[zone].monthly).toBeGreaterThan(ZONE_FARES[zone].weekly);
-      });
-
-      it('weekday day pass >= weekend day pass', () => {
-        expect(ZONE_FARES[zone].dayPassWd).toBeGreaterThanOrEqual(ZONE_FARES[zone].dayPassWe);
-      });
-    });
+  it('contains all expected zone pairs', () => {
+    for (let i = 0; i < ZONES.length; i++) {
+      for (let j = i; j < ZONES.length; j++) {
+        const key = `${ZONES[i]},${ZONES[j]}`;
+        expect(ZONE_FARES, `missing pair ${key}`).toHaveProperty(key);
+      }
+    }
   });
 
-  it('fares increase with zone number (higher zones = farther = more expensive)', () => {
-    for (let i = 1; i < EXPECTED_ZONES.length; i++) {
-      const prev = ZONE_FARES[EXPECTED_ZONES[i - 1]];
-      const curr = ZONE_FARES[EXPECTED_ZONES[i]];
-      expect(curr.monthly).toBeGreaterThanOrEqual(prev.monthly);
-      expect(curr.peakOw).toBeGreaterThanOrEqual(prev.peakOw);
+  it('every entry has all required fare fields as positive numbers', () => {
+    for (const [pair, fares] of Object.entries(ZONE_FARES)) {
+      REQUIRED_KEYS.forEach(key => {
+        expect(typeof fares[key], `${pair}.${key} type`).toBe('number');
+        expect(fares[key], `${pair}.${key} positive`).toBeGreaterThan(0);
+      });
+    }
+  });
+
+  it('peak >= off-peak for every pair', () => {
+    for (const [pair, fares] of Object.entries(ZONE_FARES)) {
+      expect(fares.peakOw, `${pair} peak >= off-peak`).toBeGreaterThanOrEqual(fares.offpeakOw);
+    }
+  });
+
+  it('monthly > weekly for every pair', () => {
+    for (const [pair, fares] of Object.entries(ZONE_FARES)) {
+      expect(fares.monthly, `${pair} monthly > weekly`).toBeGreaterThan(fares.weekly);
+    }
+  });
+
+  it('weekday day pass >= weekend day pass for every pair', () => {
+    for (const [pair, fares] of Object.entries(ZONE_FARES)) {
+      expect(fares.dayPassWd, `${pair} weekday >= weekend pass`).toBeGreaterThanOrEqual(fares.dayPassWe);
+    }
+  });
+
+  it('Zone 1 fares increase with zone number (farther = more expensive)', () => {
+    for (let i = 1; i < ZONES.length; i++) {
+      const prev = ZONE_FARES[`1,${ZONES[i - 1]}`];
+      const curr = ZONE_FARES[`1,${ZONES[i]}`];
+      expect(curr.monthly, `Zone 1→${ZONES[i]} monthly >= Zone 1→${ZONES[i-1]}`).toBeGreaterThanOrEqual(prev.monthly);
+      expect(curr.peakOw, `Zone 1→${ZONES[i]} peak >= Zone 1→${ZONES[i-1]}`).toBeGreaterThanOrEqual(prev.peakOw);
+    }
+  });
+
+  it('trips between zones 4–14 have equal peak and off-peak one-way fares', () => {
+    const outerZones = [4, 7, 9, 10, 12, 14];
+    for (let i = 0; i < outerZones.length; i++) {
+      for (let j = i; j < outerZones.length; j++) {
+        const key = `${outerZones[i]},${outerZones[j]}`;
+        expect(ZONE_FARES[key].peakOw, `${key} peak === off-peak`).toBe(ZONE_FARES[key].offpeakOw);
+      }
     }
   });
 });
 
-// ─── Inline fares match Zone 7 defaults ──────────────────────────────────────
+// ─── Inline fares match Zone 1→7 defaults ────────────────────────────────────
 
-describe('default fares match Zone 7 (Hicksville default)', () => {
-  const Z7 = ZONE_FARES[7];
+describe('default fares match Zone 1→7 (Hicksville↔Penn default)', () => {
+  const Z17 = ZONE_FARES['1,7'];
   const KEYS = ['monthly', 'weekly', 'peakOw', 'offpeakOw', 'dayPassWd', 'dayPassWe'];
 
   KEYS.forEach(key => {
-    it(`${key}: inline ${INLINE_FARES[key]} === Zone 7 ${Z7[key]}`, () => {
-      expect(INLINE_FARES[key]).toBeCloseTo(Z7[key]);
+    it(`${key}: inline ${INLINE_FARES[key]} === Zone 1→7 ${Z17[key]}`, () => {
+      expect(INLINE_FARES[key]).toBeCloseTo(Z17[key]);
     });
   });
 });

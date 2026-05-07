@@ -2,11 +2,11 @@
  * OPUS-120: PWA and service worker tests.
  * Verifies SW registration, cache completeness, offline functionality, and manifest.
  *
- * Cache version: lirr-calc-v6 (update when sw.js bumps the version)
+ * Cache version: lirr-calc-v9 (update when sw.js bumps the version)
  */
 import { test, expect } from '@playwright/test';
 
-const CACHE_NAME = 'lirr-calc-v8';
+const CACHE_NAME = 'lirr-calc-v9';
 
 const EXPECTED_ASSETS = [
   '/',
