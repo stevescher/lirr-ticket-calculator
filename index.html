@@ -750,8 +750,10 @@
       api_host: 'https://us.i.posthog.com',
       defaults: '2025-05-24',
       person_profiles: 'identified_only',
+      capture_pageview: true,
     });
     posthog.register({ app: 'lirr-ticket-calculator' });
+    posthog.capture('$pageview');
   </script>
 </head>
 <body>
