@@ -4,7 +4,7 @@
  * Source: MTA / Long Island Rail Road Station Fares
  * Effective: January 4, 2026
  * Reference: https://www.mta.info/document/194866
- * Last verified: 2026-06-01
+ * Last verified: 2026-06-30
  *
  * LIRR uses 8 fare zones: 1, 3, 4, 7, 9, 10, 12, 14
  * Fares are determined by zone pair (origin zone + destination zone).
@@ -19,6 +19,11 @@
  *
  * Note: For trips within Zones 4-14 (not involving Zone 1 or 3),
  * peak and off-peak fares are the same.
+ *
+ * Reduced Fare (Senior Citizen / Disabled / Medicare): flat one-way rate,
+ * no peak/off-peak split. Valid all day, every day, including AM peak
+ * (as of the Jan 4, 2026 fare update). No reduced monthly/weekly/day-pass
+ * product exists in the official fare chart — one-way only.
  */
 
 // ─── Fare Metadata ──────────────────────────────────────────────────────────
@@ -27,7 +32,7 @@
 // Updated automatically by the monthly fare-check scheduled task.
 const FARE_METADATA = {
   effective: '2026-01-04',     // YYYY-MM-DD — when MTA's current fares took effect
-  lastVerified: '2026-06-01',  // YYYY-MM-DD — when fares were last cross-checked vs MTA
+  lastVerified: '2026-06-30',  // YYYY-MM-DD — when fares were last cross-checked vs MTA
 };
 
 // ─── Fare Table (all zone pairs) ────────────────────────────────────────────
@@ -35,42 +40,42 @@ const FARE_METADATA = {
 // All fares in USD. Source: MTA document 194866, effective January 4, 2026.
 // For trips where both zones are 4–14, peak and off-peak one-way are the same.
 const ZONE_FARES = {
-  '1,1':   { monthly: 172.50, weekly:  67.75, peakOw:  7.25, offpeakOw:  5.25, dayPassWd: 14.50, dayPassWe: 10.50 },
-  '1,3':   { monthly: 207.00, weekly:  81.50, peakOw:  7.25, offpeakOw:  5.25, dayPassWd: 14.50, dayPassWe: 10.50 },
-  '1,4':   { monthly: 264.25, weekly:  94.00, peakOw: 13.50, offpeakOw: 10.00, dayPassWd: 24.25, dayPassWe: 20.00 },
-  '1,7':   { monthly: 299.75, weekly: 106.50, peakOw: 15.25, offpeakOw: 11.25, dayPassWd: 27.50, dayPassWe: 22.50 },
-  '1,9':   { monthly: 356.50, weekly: 126.75, peakOw: 18.25, offpeakOw: 13.50, dayPassWd: 32.75, dayPassWe: 27.00 },
-  '1,10':  { monthly: 394.50, weekly: 140.25, peakOw: 21.50, offpeakOw: 16.00, dayPassWd: 38.75, dayPassWe: 32.00 },
-  '1,12':  { monthly: 452.00, weekly: 160.75, peakOw: 25.50, offpeakOw: 18.75, dayPassWd: 46.00, dayPassWe: 37.50 },
-  '1,14':  { monthly: 487.75, weekly: 173.50, peakOw: 33.00, offpeakOw: 24.50, dayPassWd: 59.50, dayPassWe: 49.00 },
-  '3,3':   { monthly: 130.50, weekly:  49.50, peakOw:  6.00, offpeakOw:  4.50, dayPassWd: 10.75, dayPassWe:  9.00 },
-  '3,4':   { monthly: 197.25, weekly:  67.75, peakOw:  9.00, offpeakOw:  6.75, dayPassWd: 16.25, dayPassWe: 13.50 },
-  '3,7':   { monthly: 230.75, weekly:  79.50, peakOw: 10.75, offpeakOw:  8.00, dayPassWd: 19.25, dayPassWe: 16.00 },
-  '3,9':   { monthly: 277.75, weekly:  95.50, peakOw: 13.25, offpeakOw:  9.75, dayPassWd: 23.75, dayPassWe: 19.50 },
-  '3,10':  { monthly: 327.75, weekly: 112.75, peakOw: 16.50, offpeakOw: 12.25, dayPassWd: 29.75, dayPassWe: 24.50 },
-  '3,12':  { monthly: 394.50, weekly: 135.75, peakOw: 22.00, offpeakOw: 16.25, dayPassWd: 39.50, dayPassWe: 32.50 },
-  '3,14':  { monthly: 434.25, weekly: 149.50, peakOw: 28.25, offpeakOw: 21.00, dayPassWd: 50.75, dayPassWe: 42.00 },
-  '4,4':   { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75 },
-  '4,7':   { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75 },
-  '4,9':   { monthly: 162.00, weekly:  55.75, peakOw:  6.50, offpeakOw:  6.50, dayPassWd: 11.75, dayPassWe: 11.75 },
-  '4,10':  { monthly: 218.25, weekly:  75.00, peakOw:  8.25, offpeakOw:  8.25, dayPassWd: 14.75, dayPassWe: 14.75 },
-  '4,12':  { monthly: 278.75, weekly:  96.00, peakOw: 12.25, offpeakOw: 12.25, dayPassWd: 22.00, dayPassWe: 22.00 },
-  '4,14':  { monthly: 338.25, weekly: 116.25, peakOw: 19.50, offpeakOw: 19.50, dayPassWd: 35.00, dayPassWe: 35.00 },
-  '7,7':   { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75 },
-  '7,9':   { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75 },
-  '7,10':  { monthly: 162.00, weekly:  55.75, peakOw:  6.50, offpeakOw:  6.50, dayPassWd: 11.75, dayPassWe: 11.75 },
-  '7,12':  { monthly: 241.50, weekly:  83.00, peakOw: 10.75, offpeakOw: 10.75, dayPassWd: 19.25, dayPassWe: 19.25 },
-  '7,14':  { monthly: 302.50, weekly: 104.00, peakOw: 18.00, offpeakOw: 18.00, dayPassWd: 32.50, dayPassWe: 32.50 },
-  '9,9':   { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75 },
-  '9,10':  { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75 },
-  '9,12':  { monthly: 208.00, weekly:  71.50, peakOw:  8.25, offpeakOw:  8.25, dayPassWd: 14.75, dayPassWe: 14.75 },
-  '9,14':  { monthly: 267.50, weekly:  92.00, peakOw: 14.75, offpeakOw: 14.75, dayPassWd: 26.50, dayPassWe: 26.50 },
-  '10,10': { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75 },
-  '10,12': { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75 },
-  '10,14': { monthly: 207.75, weekly:  71.50, peakOw: 10.50, offpeakOw: 10.50, dayPassWd: 19.00, dayPassWe: 19.00 },
-  '12,12': { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75 },
-  '12,14': { monthly: 170.25, weekly:  58.50, peakOw:  7.25, offpeakOw:  7.25, dayPassWd: 13.00, dayPassWe: 13.00 },
-  '14,14': { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75 },
+  '1,1':   { monthly: 172.50, weekly:  67.75, peakOw:  7.25, offpeakOw:  5.25, dayPassWd: 14.50, dayPassWe: 10.50, reducedOw:  3.50 },
+  '1,3':   { monthly: 207.00, weekly:  81.50, peakOw:  7.25, offpeakOw:  5.25, dayPassWd: 14.50, dayPassWe: 10.50, reducedOw:  3.50 },
+  '1,4':   { monthly: 264.25, weekly:  94.00, peakOw: 13.50, offpeakOw: 10.00, dayPassWd: 24.25, dayPassWe: 20.00, reducedOw:  6.75 },
+  '1,7':   { monthly: 299.75, weekly: 106.50, peakOw: 15.25, offpeakOw: 11.25, dayPassWd: 27.50, dayPassWe: 22.50, reducedOw:  7.50 },
+  '1,9':   { monthly: 356.50, weekly: 126.75, peakOw: 18.25, offpeakOw: 13.50, dayPassWd: 32.75, dayPassWe: 27.00, reducedOw:  9.00 },
+  '1,10':  { monthly: 394.50, weekly: 140.25, peakOw: 21.50, offpeakOw: 16.00, dayPassWd: 38.75, dayPassWe: 32.00, reducedOw: 10.75 },
+  '1,12':  { monthly: 452.00, weekly: 160.75, peakOw: 25.50, offpeakOw: 18.75, dayPassWd: 46.00, dayPassWe: 37.50, reducedOw: 12.75 },
+  '1,14':  { monthly: 487.75, weekly: 173.50, peakOw: 33.00, offpeakOw: 24.50, dayPassWd: 59.50, dayPassWe: 49.00, reducedOw: 16.50 },
+  '3,3':   { monthly: 130.50, weekly:  49.50, peakOw:  6.00, offpeakOw:  4.50, dayPassWd: 10.75, dayPassWe:  9.00, reducedOw:  3.00 },
+  '3,4':   { monthly: 197.25, weekly:  67.75, peakOw:  9.00, offpeakOw:  6.75, dayPassWd: 16.25, dayPassWe: 13.50, reducedOw:  4.50 },
+  '3,7':   { monthly: 230.75, weekly:  79.50, peakOw: 10.75, offpeakOw:  8.00, dayPassWd: 19.25, dayPassWe: 16.00, reducedOw:  5.25 },
+  '3,9':   { monthly: 277.75, weekly:  95.50, peakOw: 13.25, offpeakOw:  9.75, dayPassWd: 23.75, dayPassWe: 19.50, reducedOw:  6.50 },
+  '3,10':  { monthly: 327.75, weekly: 112.75, peakOw: 16.50, offpeakOw: 12.25, dayPassWd: 29.75, dayPassWe: 24.50, reducedOw:  8.25 },
+  '3,12':  { monthly: 394.50, weekly: 135.75, peakOw: 22.00, offpeakOw: 16.25, dayPassWd: 39.50, dayPassWe: 32.50, reducedOw: 11.00 },
+  '3,14':  { monthly: 434.25, weekly: 149.50, peakOw: 28.25, offpeakOw: 21.00, dayPassWd: 50.75, dayPassWe: 42.00, reducedOw: 14.00 },
+  '4,4':   { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75, reducedOw:  1.75 },
+  '4,7':   { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75, reducedOw:  1.75 },
+  '4,9':   { monthly: 162.00, weekly:  55.75, peakOw:  6.50, offpeakOw:  6.50, dayPassWd: 11.75, dayPassWe: 11.75, reducedOw:  3.25 },
+  '4,10':  { monthly: 218.25, weekly:  75.00, peakOw:  8.25, offpeakOw:  8.25, dayPassWd: 14.75, dayPassWe: 14.75, reducedOw:  4.00 },
+  '4,12':  { monthly: 278.75, weekly:  96.00, peakOw: 12.25, offpeakOw: 12.25, dayPassWd: 22.00, dayPassWe: 22.00, reducedOw:  6.00 },
+  '4,14':  { monthly: 338.25, weekly: 116.25, peakOw: 19.50, offpeakOw: 19.50, dayPassWd: 35.00, dayPassWe: 35.00, reducedOw:  9.75 },
+  '7,7':   { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75, reducedOw:  1.75 },
+  '7,9':   { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75, reducedOw:  1.75 },
+  '7,10':  { monthly: 162.00, weekly:  55.75, peakOw:  6.50, offpeakOw:  6.50, dayPassWd: 11.75, dayPassWe: 11.75, reducedOw:  3.25 },
+  '7,12':  { monthly: 241.50, weekly:  83.00, peakOw: 10.75, offpeakOw: 10.75, dayPassWd: 19.25, dayPassWe: 19.25, reducedOw:  5.25 },
+  '7,14':  { monthly: 302.50, weekly: 104.00, peakOw: 18.00, offpeakOw: 18.00, dayPassWd: 32.50, dayPassWe: 32.50, reducedOw:  9.00 },
+  '9,9':   { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75, reducedOw:  1.75 },
+  '9,10':  { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75, reducedOw:  1.75 },
+  '9,12':  { monthly: 208.00, weekly:  71.50, peakOw:  8.25, offpeakOw:  8.25, dayPassWd: 14.75, dayPassWe: 14.75, reducedOw:  4.00 },
+  '9,14':  { monthly: 267.50, weekly:  92.00, peakOw: 14.75, offpeakOw: 14.75, dayPassWd: 26.50, dayPassWe: 26.50, reducedOw:  7.25 },
+  '10,10': { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75, reducedOw:  1.75 },
+  '10,12': { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75, reducedOw:  1.75 },
+  '10,14': { monthly: 207.75, weekly:  71.50, peakOw: 10.50, offpeakOw: 10.50, dayPassWd: 19.00, dayPassWe: 19.00, reducedOw:  5.25 },
+  '12,12': { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75, reducedOw:  1.75 },
+  '12,14': { monthly: 170.25, weekly:  58.50, peakOw:  7.25, offpeakOw:  7.25, dayPassWd: 13.00, dayPassWe: 13.00, reducedOw:  3.50 },
+  '14,14': { monthly:  96.00, weekly:  33.00, peakOw:  3.75, offpeakOw:  3.75, dayPassWd:  6.75, dayPassWe:  6.75, reducedOw:  1.75 },
 };
 
 // ─── Stations by Branch ─────────────────────────────────────────────────────

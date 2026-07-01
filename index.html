@@ -335,6 +335,10 @@
     .day.on.offpeak-both {
       background: #059669;
     }
+    /* Reduced-fare mode: purple */
+    .day.on.reduced-both {
+      background: #7c3aed;
+    }
     /* Non-color mode badges (WCAG 1.4.1) */
     .day.on.peak-both::before {
       content: 'P';
@@ -345,6 +349,13 @@
     }
     .day.on.offpeak-both::before {
       content: 'O';
+      position: absolute;
+      top: 2px; right: 3px;
+      font-size: .45rem; font-weight: 900; line-height: 1;
+      color: rgba(255,255,255,.85);
+    }
+    .day.on.reduced-both::before {
+      content: 'R';
       position: absolute;
       top: 2px; right: 3px;
       font-size: .45rem; font-weight: 900; line-height: 1;
@@ -386,6 +397,7 @@
     .legend-dot.blue   { background: var(--primary); }
     .legend-dot.amber  { background: #d97706; }
     .legend-dot.green  { background: #059669; }
+    .legend-dot.purple { background: #7c3aed; }
     .chip .legend-dot  { display: inline-block; vertical-align: middle; margin-right: .25rem; }
     .legend-hint { font-size: .7rem; color: var(--text-3); margin-top: .375rem; }
 
@@ -835,12 +847,14 @@
       <button class="chip" data-mode="1"><span class="legend-dot blue"></span>Peak in / Off-peak out</button>
       <button class="chip" data-mode="2"><span class="legend-dot amber"></span>Peak both</button>
       <button class="chip" data-mode="3"><span class="legend-dot green"></span>Off-peak both</button>
+      <button class="chip" data-mode="4"><span class="legend-dot purple"></span>Reduced fare</button>
     </div>
     <div class="cal-grid" id="calGrid"></div>
     <div class="cal-legend">
       <div class="legend-item"><div class="legend-dot blue"></div>Peak in, off-peak out</div>
       <div class="legend-item" id="peakBothLegend"><div class="legend-dot amber"></div>Peak in, peak out</div>
       <div class="legend-item" id="offpeakBothLegend"><div class="legend-dot green"></div>Off-peak both ways</div>
+      <div class="legend-item"><div class="legend-dot purple"></div>Reduced fare (Senior/Disabled/Medicare)</div>
     </div>
     <div class="legend-hint" id="legendHint"></div>
   </div>
@@ -886,6 +900,10 @@
       <div class="fare-field">
         <label for="f-offpeak">Off-Peak One-Way</label>
         <input type="number" id="f-offpeak" step="0.25" min="0">
+      </div>
+      <div class="fare-field">
+        <label for="f-reduced">Reduced Fare One-Way</label>
+        <input type="number" id="f-reduced" step="0.25" min="0">
       </div>
       <div class="fare-field">
         <label for="f-dp-wd">Weekday Day Pass</label>

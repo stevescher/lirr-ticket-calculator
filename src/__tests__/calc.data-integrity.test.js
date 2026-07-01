@@ -38,7 +38,7 @@ const INLINE_FARES = extractDefaultFares();
 
 describe('ZONE_FARES structure', () => {
   const ZONES = [1, 3, 4, 7, 9, 10, 12, 14];
-  const REQUIRED_KEYS = ['monthly', 'weekly', 'peakOw', 'offpeakOw', 'dayPassWd', 'dayPassWe'];
+  const REQUIRED_KEYS = ['monthly', 'weekly', 'peakOw', 'offpeakOw', 'dayPassWd', 'dayPassWe', 'reducedOw'];
 
   // 8 zones → 8 same-zone + 28 cross-zone pairs = 36 total
   it('contains all 36 zone pair entries', () => {
@@ -81,6 +81,12 @@ describe('ZONE_FARES structure', () => {
     }
   });
 
+  it('reduced fare < off-peak one-way for every pair (~50% discount)', () => {
+    for (const [pair, fares] of Object.entries(ZONE_FARES)) {
+      expect(fares.reducedOw, `${pair} reduced < off-peak`).toBeLessThan(fares.offpeakOw);
+    }
+  });
+
   it('Zone 1 fares increase with zone number (farther = more expensive)', () => {
     for (let i = 1; i < ZONES.length; i++) {
       const prev = ZONE_FARES[`1,${ZONES[i - 1]}`];
@@ -105,7 +111,7 @@ describe('ZONE_FARES structure', () => {
 
 describe('default fares match Zone 1→7 (Hicksville↔Penn default)', () => {
   const Z17 = ZONE_FARES['1,7'];
-  const KEYS = ['monthly', 'weekly', 'peakOw', 'offpeakOw', 'dayPassWd', 'dayPassWe'];
+  const KEYS = ['monthly', 'weekly', 'peakOw', 'offpeakOw', 'dayPassWd', 'dayPassWe', 'reducedOw'];
 
   KEYS.forEach(key => {
     it(`${key}: inline ${INLINE_FARES[key]} === Zone 1→7 ${Z17[key]}`, () => {

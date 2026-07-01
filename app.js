@@ -6,10 +6,11 @@ const fares = {
   offpeakOw:   11.25,
   dayPassWd:   27.50,
   dayPassWe:   22.50,
+  reducedOw:    7.50,
 };
 const fmt = n => '$' + n.toFixed(2);
-// All valid day modes: 1=peak-in/off-peak-out, 2=peak-both, 3=off-peak-both
-const VALID_MODES = new Set([1, 2, 3]);
+// All valid day modes: 1=peak-in/off-peak-out, 2=peak-both, 3=off-peak-both, 4=reduced-fare-both
+const VALID_MODES = new Set([1, 2, 3, 4]);
 
 // ─── Presets ────────────────────────────────────────────────────────────────
 // ?preset=<name> loads a named configuration for bookmarking
@@ -153,7 +154,7 @@ function updateURL() {
   const days = [];
   sel.forEach((mode, key) => {
     const d = key.split('|')[2];
-    days.push(mode === 2 ? `${d}p` : mode === 3 ? `${d}o` : d);
+    days.push(mode === 2 ? `${d}p` : mode === 3 ? `${d}o` : mode === 4 ? `${d}r` : d);
   });
   days.sort((a, b) => parseInt(a) - parseInt(b));
   const hash = `${vYear}${String(vMonth+1).padStart(2,'0')}${days.length ? ':'+days.join(',') : ''}`;
@@ -173,9 +174,10 @@ function loadFromURL() {
   if (rest) rest.split(',').forEach(p => {
     const pb = p.endsWith('p');
     const ob = p.endsWith('o');
-    const d  = parseInt((pb || ob) ? p.slice(0,-1) : p);
+    const rb = p.endsWith('r');
+    const d  = parseInt((pb || ob || rb) ? p.slice(0,-1) : p);
     const maxDay = new Date(y, m + 1, 0).getDate();
-    if (!isNaN(d) && d >= 1 && d <= maxDay) sel.set(dateKey(y, m, d), pb ? 2 : ob ? 3 : 1);
+    if (!isNaN(d) && d >= 1 && d <= maxDay) sel.set(dateKey(y, m, d), pb ? 2 : ob ? 3 : rb ? 4 : 1);
   });
   return true;
 }
@@ -211,7 +213,7 @@ function copyLink() {
 
 // ─── Calendar ────────────────────────────────────────────────────────────────
 const DAY_FULL_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const MODE_LABELS = { 1: 'peak in, off-peak out', 2: 'peak both ways', 3: 'off-peak both ways' };
+const MODE_LABELS = { 1: 'peak in, off-peak out', 2: 'peak both ways', 3: 'off-peak both ways', 4: 'reduced fare both ways' };
 
 function renderCalendar() {
   const today = getToday();
@@ -276,6 +278,7 @@ function renderCalendar() {
         m       ? 'on'           : '',
         m === 2 ? 'peak-both'   : '',
         m === 3 ? 'offpeak-both': '',
+        m === 4 ? 'reduced-both': '',
         isToday ? 'today'       : '',
       ].filter(Boolean).join(' ');
       el.setAttribute('aria-selected', m ? 'true' : 'false');
@@ -298,7 +301,7 @@ function renderCalendar() {
       e.preventDefault();
       if (!sel.has(key) || we) return;
       const cur = sel.get(key);
-      sel.set(key, cur === 1 ? 2 : cur === 2 ? 3 : 1);
+      sel.set(key, cur === 1 ? 2 : cur === 2 ? 3 : cur === 3 ? 4 : 1);
       refreshCell(); persist();
     });
     el.addEventListener('keydown', e => {
@@ -306,7 +309,7 @@ function renderCalendar() {
         e.preventDefault();
         if (e.shiftKey && sel.has(key) && !we) {
           const cur = sel.get(key);
-          sel.set(key, cur === 1 ? 2 : cur === 2 ? 3 : 1);
+          sel.set(key, cur === 1 ? 2 : cur === 2 ? 3 : cur === 3 ? 4 : 1);
         } else {
           sel.has(key) ? sel.delete(key) : sel.set(key, defaultMode);
         }
@@ -328,7 +331,7 @@ function renderCalendar() {
       if (!sel.has(key) || we) return;
       pt = setTimeout(() => {
         const cur = sel.get(key);
-        sel.set(key, cur === 1 ? 2 : cur === 2 ? 3 : 1);
+        sel.set(key, cur === 1 ? 2 : cur === 2 ? 3 : cur === 3 ? 4 : 1);
         refreshCell(); persist();
       }, 500);
     }, { passive: true });
@@ -437,20 +440,22 @@ function changeMonth(delta) {
 
 // ─── Cost calculation ────────────────────────────────────────────────────────
 function dayCost(mode, we) {
-  if (we)         return fares.offpeakOw * 2;
-  if (mode === 2) return fares.peakOw * 2;
-  if (mode === 3) return fares.offpeakOw * 2;
+  if (mode === 4)  return fares.reducedOw * 2;
+  if (we)          return fares.offpeakOw * 2;
+  if (mode === 2)  return fares.peakOw * 2;
+  if (mode === 3)  return fares.offpeakOw * 2;
   return fares.peakOw + fares.offpeakOw;
 }
 
 function calcCosts() {
-  let wdDays = 0, weDays = 0, peakBothDays = 0, offpeakBothDays = 0, indTotal = 0, dpTotal = 0;
+  let wdDays = 0, weDays = 0, peakBothDays = 0, offpeakBothDays = 0, reducedBothDays = 0, indTotal = 0, dpTotal = 0;
   sel.forEach((mode, k) => {
     const [y,m,d] = k.split('|').map(Number);
     const we = isWeekend(new Date(y,m,d).getDay());
     we ? weDays++ : wdDays++;
     if (mode === 2) peakBothDays++;
     if (mode === 3) offpeakBothDays++;
+    if (mode === 4) reducedBothDays++;
     indTotal += dayCost(mode, we);
     dpTotal  += we ? fares.dayPassWe : fares.dayPassWd;
   });
@@ -477,7 +482,7 @@ function calcCosts() {
     else weeklyCombo += cost;
   });
 
-  return { total, wdDays, weDays, peakBothDays, offpeakBothDays, defaultTrip,
+  return { total, wdDays, weDays, peakBothDays, offpeakBothDays, reducedBothDays, defaultTrip,
            monthly: fares.monthly, individual: indTotal, dayPasses: dpTotal,
            weeklyCombo, passesUsed };
 }
@@ -502,17 +507,28 @@ function updateCosts() {
     return;
   }
 
-  const { total, wdDays, weDays, peakBothDays, offpeakBothDays, defaultTrip,
+  const { total, wdDays, weDays, peakBothDays, offpeakBothDays, reducedBothDays, defaultTrip,
           monthly, individual, dayPasses, weeklyCombo, passesUsed } = c;
-  const normalDays = wdDays - peakBothDays - offpeakBothDays;
+
+  // Reduced-fare days can fall on either weekday or weekend; split them out
+  // of both buckets so the remaining weekday/weekend notes stay accurate.
+  let reducedWd = 0, reducedWe = 0;
+  sel.forEach((mode, k) => {
+    if (mode !== 4) return;
+    const [y, m, d] = k.split('|').map(Number);
+    isWeekend(new Date(y, m, d).getDay()) ? reducedWe++ : reducedWd++;
+  });
+  const plainWeDays = weDays - reducedWe;
+  const normalDays = wdDays - peakBothDays - offpeakBothDays - reducedWd;
 
   const noteParts = [];
   if (normalDays > 0)      noteParts.push(`${normalDays} × ${fmt(fares.peakOw+fares.offpeakOw)} (peak in/off-peak out)`);
   if (peakBothDays > 0)    noteParts.push(`${peakBothDays} × ${fmt(fares.peakOw*2)} (peak both)`);
   if (offpeakBothDays > 0) noteParts.push(`${offpeakBothDays} × ${fmt(fares.offpeakOw*2)} (off-peak both)`);
-  if (weDays > 0)          noteParts.push(`${weDays} weekend × ${fmt(fares.offpeakOw*2)}`);
+  if (reducedBothDays > 0) noteParts.push(`${reducedBothDays} × ${fmt(fares.reducedOw*2)} (reduced fare)`);
+  if (plainWeDays > 0)     noteParts.push(`${plainWeDays} weekend × ${fmt(fares.offpeakOw*2)}`);
   let indNote = noteParts.join(', ');
-  indNote += ' — buy via TrainTime app to skip $6.50 on-board fee';
+  indNote += ' — buy before boarding to skip $8 on-board surcharge';
 
   const weeklyLabel = passesUsed > 0
     ? `${passesUsed} Weekly Pass${passesUsed>1?'es':''} + Individual` : 'Weekly + Individual';
@@ -520,8 +536,17 @@ function updateCosts() {
     ? `${passesUsed} weekly pass${passesUsed>1?'es':''} cover weeks with 5+ days; individual for the rest`
     : `No single week has 5+ days — weekly pass (${fmt(fares.weekly)}) doesn't help at this usage`;
 
+  const today = getToday();
+  const isCurMon = vYear === today.getFullYear() && vMonth === today.getMonth();
+  const daysRemaining = isCurMon
+    ? new Date(vYear, vMonth + 1, 0).getDate() - today.getDate() + 1
+    : null;
+  const monthlyNote = daysRemaining !== null && today.getDate() > 1
+    ? `Unlimited rides all month — priced for the full month, but only ${daysRemaining} day${daysRemaining!==1?'s':''} remain${daysRemaining===1?'s':''}`
+    : 'Unlimited rides all month';
+
   const allOpts = [
-    { id:'monthly',    name:'Monthly Pass',        cost:monthly,     note:'Unlimited rides all month' },
+    { id:'monthly',    name:'Monthly Pass',        cost:monthly,     note:monthlyNote },
     { id:'individual', name:'Individual One-Ways',  cost:individual,  note:indNote },
     { id:'daypass',    name:'Day Passes',            cost:dayPasses,   note:`Unlimited same-day travel — ${fmt(fares.dayPassWd)}/weekday${weDays>0?`, ${fmt(fares.dayPassWe)}/weekend (same as RT — saves only on 3+ trips/day)`:''}` },
     { id:'weekly',     name:weeklyLabel,             cost:weeklyCombo, note:weeklyNote },
@@ -603,7 +628,9 @@ function updateCosts() {
     options.append(optDiv);
   });
 
-  const avgTripCost = wdDays > 0 ? (individual - weDays * dayCost(1, true)) / wdDays : defaultTrip;
+  const avgTripCost = wdDays > 0
+    ? (individual - plainWeDays * dayCost(1, true) - reducedWe * dayCost(4, true)) / wdDays
+    : defaultTrip;
   const breakeven = Math.ceil(fares.monthly / avgTripCost);
   const toBreak   = breakeven - wdDays;
 
@@ -645,13 +672,19 @@ function updateCosts() {
   const nearTie = runnerUp && (runnerUp.cost - bestOpt.cost) <= 5 && (runnerUp.cost - bestOpt.cost) > 0.005;
 
   if (wdDays === 0) {
-    insightBox.append(makeInsightRow('tip', 'Only weekend days — off-peak fares both ways.'));
+    const hasReduced = reducedBothDays > 0, hasPlain = plainWeDays > 0;
+    insightBox.append(makeInsightRow('tip',
+      hasReduced && hasPlain ? 'Only weekend days — reduced fare and off-peak fares both apply.'
+      : hasReduced           ? 'Only weekend days — reduced fare applies both ways.'
+      :                        'Only weekend days — off-peak fares both ways.'));
   } else if (bestOpt.id === 'individual') {
     insightBox.append(makeInsightRow('tip', 'Individual tickets save ', ['strong', fmt(monthly - individual)], ' vs monthly for this selection.'));
     if (toBreak > 0 && toBreak <= 6)
       insightBox.append(makeInsightRow('calendar', 'Add ', ['strong', `${toBreak} more weekday${toBreak!==1?'s':''}`], ' and the monthly pass becomes cheapest.'));
   } else if (bestOpt.id === 'monthly') {
     insightBox.append(makeInsightRow('check', 'Monthly pass saves ', ['strong', fmt(individual - monthly)], ' vs individual tickets.'));
+    if (daysRemaining !== null && today.getDate() > 1)
+      insightBox.append(makeInsightRow('calendar', `Only `, ['strong', `${daysRemaining} day${daysRemaining!==1?'s':''}`], ` left this month — a monthly pass still costs full price, so confirm it still pays off before buying.`));
   } else if (bestOpt.id === 'weekly') {
     insightBox.append(makeInsightRow('check', `${weeklyLabel} saves `, ['strong', fmt(individual - weeklyCombo)], ' vs individual tickets.'));
     if (passesUsed > 0)
@@ -667,10 +700,11 @@ function updateCosts() {
     insightBox.append(makeInsightRow('info', `${names[runnerUp.id]} is only `, ['strong', diff], ' more — consider convenience.'));
   }
 
-  // CityTicket awareness
+  // CityTicket awareness — skip if already on reduced fare, since reduced fare
+  // ($3.50 within Zone 1) always beats CityTicket's $5.25 off-peak rate.
   const fromSt = findStation(document.getElementById('fromStation')?.value || '');
   const toSt   = findStation(document.getElementById('toStation')?.value || '');
-  if (weDays > 0 && fromSt && toSt && isCityTicketEligible(fromSt, toSt)) {
+  if (weDays > 0 && reducedBothDays === 0 && fromSt && toSt && isCityTicketEligible(fromSt, toSt)) {
     insightBox.append(makeInsightRow('tag',
       'Weekend rides between City Zone stations qualify for ', ['strong', 'CityTicket'],
       ` (${fmt(7.25)} peak / ${fmt(5.25)} off-peak one-way) — buy at the station or via the MTA app.`));
@@ -678,7 +712,10 @@ function updateCosts() {
 
   insightBox.append(
     makeInsightRow('chart', 'Monthly breakeven: ', ['strong', `${breakeven} weekday trips`], ` (${fmt(fares.monthly)} ÷ ${fmt(avgTripCost)}/day).`),
-    makeInsightRow('phone', 'Buy via ', ['strong', 'TrainTime app'], ' to avoid the $6.50 on-board surcharge.')
+    makeInsightRow('phone', 'Buy or activate your ticket ', ['strong', 'before boarding'],
+      reducedBothDays > 0
+        ? ' to avoid the on-board surcharge (waived for reduced-fare riders — seniors, passengers with disabilities, and Medicare recipients).'
+        : ' to avoid the $8 on-board surcharge — it applies to TrainTime activations made on the train too.')
   );
 
   // Savings callout — show when best option saves meaningful money vs runner-up
@@ -782,7 +819,8 @@ function updateProjection() {
 // ─── Fare editor ─────────────────────────────────────────────────────────────
 function initFareEditor() {
   [['f-monthly','monthly'],['f-weekly','weekly'],['f-peak','peakOw'],
-   ['f-offpeak','offpeakOw'],['f-dp-wd','dayPassWd'],['f-dp-we','dayPassWe']
+   ['f-offpeak','offpeakOw'],['f-reduced','reducedOw'],
+   ['f-dp-wd','dayPassWd'],['f-dp-we','dayPassWe']
   ].forEach(([id,key]) => {
     const inp = document.getElementById(id);
     inp.value = fares[key];
@@ -856,12 +894,14 @@ function initStationSelector(savedFrom, savedTo) {
     fares.offpeakOw = zoneFares.offpeakOw;
     fares.dayPassWd = zoneFares.dayPassWd;
     fares.dayPassWe = zoneFares.dayPassWe;
+    fares.reducedOw = zoneFares.reducedOw;
 
     // Sync fare editor inputs
     document.getElementById('f-monthly').value = fares.monthly;
     document.getElementById('f-weekly').value  = fares.weekly;
     document.getElementById('f-peak').value    = fares.peakOw;
     document.getElementById('f-offpeak').value = fares.offpeakOw;
+    document.getElementById('f-reduced').value = fares.reducedOw;
     document.getElementById('f-dp-wd').value   = fares.dayPassWd;
     document.getElementById('f-dp-we').value   = fares.dayPassWe;
 

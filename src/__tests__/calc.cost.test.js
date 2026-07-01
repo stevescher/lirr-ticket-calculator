@@ -14,6 +14,7 @@ const Z7 = {
   offpeakOw:   11.25,
   dayPassWd:   27.50,
   dayPassWe:   22.50,
+  reducedOw:    7.50,
 };
 
 // Helpers
@@ -55,6 +56,14 @@ describe('dayCost', () => {
     const cost3 = dayCost(Z7, 3, true);
     expect(cost1).toBeCloseTo(cost2);
     expect(cost1).toBeCloseTo(cost3);
+  });
+
+  it('mode 4 weekday → reduced fare both ways', () => {
+    expect(dayCost(Z7, 4, false)).toBeCloseTo(Z7.reducedOw * 2); // 15.00
+  });
+
+  it('mode 4 weekend → reduced fare both ways (not off-peak — reduced fare overrides weekend)', () => {
+    expect(dayCost(Z7, 4, true)).toBeCloseTo(Z7.reducedOw * 2);
   });
 });
 
@@ -131,6 +140,26 @@ describe('calcCosts', () => {
     const c = calcCosts(s, Z7);
     expect(c.offpeakBothDays).toBe(2);
     expect(c.peakBothDays).toBe(0);
+  });
+
+  it('mode 4 (reduced fare) days: correct reducedBothDays count and individual total', () => {
+    // Tue Apr 7 (mode 1), Wed Apr 8 (mode 4), Thu Apr 9 (mode 4)
+    const s = sel([wdKey(7), 1], [wdKey(8), 4], [wdKey(9), 4]);
+    const c = calcCosts(s, Z7);
+    expect(c.reducedBothDays).toBe(2);
+    expect(c.peakBothDays).toBe(0);
+    expect(c.offpeakBothDays).toBe(0);
+    const expected = (Z7.peakOw + Z7.offpeakOw) + Z7.reducedOw * 2 + Z7.reducedOw * 2;
+    expect(c.individual).toBeCloseTo(expected);
+  });
+
+  it('mode 4 on a weekend day still charges reduced fare, not off-peak', () => {
+    // April 5, 2026 is a Sunday
+    const s = sel([dateKey(2026, 3, 5), 4]);
+    const c = calcCosts(s, Z7);
+    expect(c.weDays).toBe(1);
+    expect(c.reducedBothDays).toBe(1);
+    expect(c.individual).toBeCloseTo(Z7.reducedOw * 2);
   });
 
   it('monthly is cheapest with enough weekdays selected', () => {

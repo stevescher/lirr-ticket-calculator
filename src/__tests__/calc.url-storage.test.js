@@ -57,6 +57,11 @@ describe('decodeURL', () => {
     expect(result.sel.get(dateKey(2026, 3, 8))).toBe(3);
   });
 
+  it('mode 4 suffix "r" parsed correctly', () => {
+    const result = decodeURL('202604:8r');
+    expect(result.sel.get(dateKey(2026, 3, 8))).toBe(4);
+  });
+
   it('no suffix defaults to mode 1', () => {
     const result = decodeURL('202604:8');
     expect(result.sel.get(dateKey(2026, 3, 8))).toBe(1);
@@ -121,6 +126,11 @@ describe('encodeURL', () => {
   it('mode 3 days get "o" suffix', () => {
     const s = new Map([[dateKey(2026, 3, 9), 3]]);
     expect(encodeURL(s, 2026, 3)).toBe('202604:9o');
+  });
+
+  it('mode 4 days get "r" suffix', () => {
+    const s = new Map([[dateKey(2026, 3, 9), 4]]);
+    expect(encodeURL(s, 2026, 3)).toBe('202604:9r');
   });
 
   it('days are sorted ascending regardless of insertion order (OPUS-91 regression)', () => {
@@ -198,8 +208,14 @@ describe('decodeStorage', () => {
     expect(sel.size).toBe(0);
   });
 
-  it('invalid mode 4 is rejected', () => {
+  it('mode 4 (reduced fare) is accepted', () => {
     const sel = decodeStorage(JSON.stringify([[7, 4]]), 2026, 3);
+    expect(sel.size).toBe(1);
+    expect(sel.get('2026|3|7')).toBe(4);
+  });
+
+  it('mode 5 is rejected', () => {
+    const sel = decodeStorage(JSON.stringify([[7, 5]]), 2026, 3);
     expect(sel.size).toBe(0);
   });
 

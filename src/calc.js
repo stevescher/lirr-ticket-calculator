@@ -79,10 +79,11 @@ export function holName(year, m, d)   { return buildHolidays(year).get(`${m}|${d
 /**
  * Cost of a single commute day.
  * @param {object} fares  - fare object from ZONE_FARES (peakOw, offpeakOw, etc.)
- * @param {number} mode   - 1=peak-in/off-peak-out, 2=peak-both, 3=off-peak-both
- * @param {boolean} we    - true if weekend (weekends always use off-peak both ways)
+ * @param {number} mode   - 1=peak-in/off-peak-out, 2=peak-both, 3=off-peak-both, 4=reduced-fare-both
+ * @param {boolean} we    - true if weekend (weekends always use off-peak both ways, except mode 4)
  */
 export function dayCost(fares, mode, we) {
+  if (mode === 4) return fares.reducedOw * 2;
   if (we)         return fares.offpeakOw * 2;
   if (mode === 2) return fares.peakOw * 2;
   if (mode === 3) return fares.offpeakOw * 2;
@@ -96,7 +97,7 @@ export function dayCost(fares, mode, we) {
  * @returns Cost breakdown object, or null if nothing is selected.
  */
 export function calcCosts(sel, fares) {
-  let wdDays = 0, weDays = 0, peakBothDays = 0, offpeakBothDays = 0;
+  let wdDays = 0, weDays = 0, peakBothDays = 0, offpeakBothDays = 0, reducedBothDays = 0;
   let indTotal = 0, dpTotal = 0;
 
   sel.forEach((mode, k) => {
@@ -105,6 +106,7 @@ export function calcCosts(sel, fares) {
     we ? weDays++ : wdDays++;
     if (mode === 2) peakBothDays++;
     if (mode === 3) offpeakBothDays++;
+    if (mode === 4) reducedBothDays++;
     indTotal += dayCost(fares, mode, we);
     dpTotal  += we ? fares.dayPassWe : fares.dayPassWd;
   });
@@ -132,7 +134,7 @@ export function calcCosts(sel, fares) {
   });
 
   return {
-    total, wdDays, weDays, peakBothDays, offpeakBothDays,
+    total, wdDays, weDays, peakBothDays, offpeakBothDays, reducedBothDays,
     defaultTrip: fares.peakOw + fares.offpeakOw,
     monthly:    fares.monthly,
     individual: indTotal,
@@ -152,7 +154,7 @@ export function encodeURL(sel, year, month) {
   const days = [];
   sel.forEach((mode, key) => {
     const d = key.split('|')[2];
-    days.push(mode === 2 ? `${d}p` : mode === 3 ? `${d}o` : d);
+    days.push(mode === 2 ? `${d}p` : mode === 3 ? `${d}o` : mode === 4 ? `${d}r` : d);
   });
   days.sort((a, b) => parseInt(a) - parseInt(b));
   return `${year}${String(month + 1).padStart(2, '0')}${days.length ? ':' + days.join(',') : ''}`;
@@ -174,16 +176,17 @@ export function decodeURL(hash) {
   if (rest) rest.split(',').forEach(p => {
     const pb = p.endsWith('p');
     const ob = p.endsWith('o');
-    const d  = parseInt((pb || ob) ? p.slice(0, -1) : p);
+    const rb = p.endsWith('r');
+    const d  = parseInt((pb || ob || rb) ? p.slice(0, -1) : p);
     const maxDay = new Date(y, m + 1, 0).getDate();
-    if (!isNaN(d) && d >= 1 && d <= maxDay) sel.set(dateKey(y, m, d), pb ? 2 : ob ? 3 : 1);
+    if (!isNaN(d) && d >= 1 && d <= maxDay) sel.set(dateKey(y, m, d), pb ? 2 : ob ? 3 : rb ? 4 : 1);
   });
   return { year: y, month: m, sel };
 }
 
 // ─── localStorage encoding/decoding ──────────────────────────────────────────
 
-const VALID_MODES = new Set([1, 2, 3]);
+const VALID_MODES = new Set([1, 2, 3, 4]);
 
 /**
  * Decodes a raw localStorage JSON string into a selection Map.
