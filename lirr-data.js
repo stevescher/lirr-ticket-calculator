@@ -4,7 +4,7 @@
  * Source: MTA / Long Island Rail Road Station Fares
  * Effective: January 4, 2026
  * Reference: https://www.mta.info/document/194866
- * Last verified: 2026-08-01
+ * Last verified: 2026-09-01
  *
  * LIRR uses 8 fare zones: 1, 3, 4, 7, 9, 10, 12, 14
  * Fares are determined by zone pair (origin zone + destination zone).
@@ -32,7 +32,7 @@
 // Updated automatically by the monthly fare-check scheduled task.
 const FARE_METADATA = {
   effective: '2026-01-04',     // YYYY-MM-DD — when MTA's current fares took effect
-  lastVerified: '2026-08-01',  // YYYY-MM-DD — when fares were last cross-checked vs MTA
+  lastVerified: '2026-09-01',  // YYYY-MM-DD — when fares were last cross-checked vs MTA
 };
 
 // ─── Fare Table (all zone pairs) ────────────────────────────────────────────
