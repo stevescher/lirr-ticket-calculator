@@ -24,6 +24,8 @@ test('main page has no accessibility violations', async ({ page }) => {
 test('main page with days selected has no accessibility violations', async ({ page }) => {
   await page.locator('.chip[data-pattern="twt"]').click();
   await expect(page.locator('#panelContent .empty')).toHaveCount(0);
+  // Let the .chip background/color transition finish so axe doesn't scan a mid-transition frame.
+  await page.waitForTimeout(200);
   const results = await scan(page);
   expect(results.violations).toEqual([]);
 });
