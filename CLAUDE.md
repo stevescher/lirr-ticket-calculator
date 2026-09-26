@@ -1,5 +1,7 @@
 **Linear team: Opus Dev | Linear project: lirr-ticket-calculator**
 
+> This project follows the workspace rules in `/Users/stevescher/claude/CLAUDE.md`. Claude Code loads that file automatically for any session in this folder.
+
 ## Project
 Static web app. No build framework.
 
@@ -9,7 +11,7 @@ Static web app. No build framework.
 The SW is configured to bypass caching entirely on localhost — dev always gets fresh files, no cache-busting needed. Only bump `CACHE` version in `sw.js` when deploying a breaking change that requires invalidating production caches.
 
 ### Verifying changes
-- **Do not rely on the preview tool for visual verification.** The preview tool has a broken 1px-wide viewport — screenshots are useless. Use the browser at `http://localhost:8080` with `Cmd+Shift+R` to hard-refresh and verify visually.
+- Verify visual changes at `http://localhost:8080` (the "Python static server" entry in `.claude/launch.json`). The in-app browser renders this app normally (checked 2026-09-25; an earlier note said its viewport was broken, which no longer holds). Hard-refresh with `Cmd+Shift+R` if a change does not show.
 - After any structural HTML edit (wrapping/unwrapping elements, changing nesting), re-read the file before reporting done. Confirm open/close tags match what was intended.
 
 ### Layout changes
