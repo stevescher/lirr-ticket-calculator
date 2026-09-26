@@ -985,5 +985,9 @@ document.getElementById('copyLinkBtn').addEventListener('click', copyLink);
 })();
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js');
+  // Registration can fail (network drop, server stopped mid-fetch). The app works
+  // without the SW, so log it instead of leaving an unhandled rejection.
+  navigator.serviceWorker.register('/sw.js').catch(err => {
+    console.warn('Service worker registration failed:', err);
+  });
 }

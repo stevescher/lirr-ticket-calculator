@@ -60,6 +60,8 @@
   <script>
     Sentry.onLoad(function() {
       Sentry.init({
+        // Local dev and Playwright runs are not production traffic.
+        enabled: !/^(localhost|127\.0\.0\.1)$/.test(location.hostname),
         tracesSampleRate: 1,
       });
     });
